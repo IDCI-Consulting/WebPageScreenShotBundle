@@ -1,0 +1,4 @@
+services:
+    idci_web_page_screen_shot.manager:
+        class: IDCI\Bundle\WebPageScreenShotBundle\Service\Manager
+        arguments: [@service_container]
