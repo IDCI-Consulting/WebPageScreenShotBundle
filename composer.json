@@ -1,0 +1,26 @@
+{
+    "name": "idci/webpagescreenshot-bundle",
+    "type": "symfony-bundle",
+    "description": "Symfony WebPageScreenShotBundle",
+    "keywords": ["screenshot", "image", "web service", "thumbnail"],
+    "license": "GPL-3.0+",
+    "authors": [
+        {
+            "name": "Baptiste Bouchereau",
+            "email": "baptiste.bouchereau@idci-consulting.fr",
+            "homepage": "http://www.idci-consulting.fr"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.2",
+        "symfony/framework-bundle":         "2.3.*",
+        "twig/twig":                        "*",
+        "doctrine/doctrine-bundle":         "*"
+    },
+    "autoload": {
+        "psr-0": { "IDCI\\Bundle\\WebPageScreenShotBundle": "" }
+    },
+    "target-dir": "IDCI/Bundle/WebPageScreenShotBundle",
+    "minimum-stability": "dev"
+}
+
