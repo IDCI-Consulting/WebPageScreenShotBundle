@@ -6,25 +6,27 @@
  */
 namespace IDCI\Bundle\WebPageScreenShotBundle\Controller;
 
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
-class FrontController
+class FrontController extends Controller
 {
+    /**
+     * Controller
+     *
+     * @Route("/screenshot")
+     */
     public function screenAction(Request $request)
-    {
-        $request->query->get('render');
-        //get defaults if not defined
-        
-        //Service call
-        
+    {       
         $response = new Response();
-       // $response->setContent());
-       // $response->headers->set('Content-Type', );
-
+        
+        $output = $this->get('idci_web_page_screen_shot.manager')->generateScreenShot($request);
+        
+        $response->setContent($output);
+              
         return $response;
     }
-
 }
