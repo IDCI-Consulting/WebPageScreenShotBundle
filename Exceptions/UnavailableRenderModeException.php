@@ -12,11 +12,11 @@ namespace IDCI\Bundle\WebPageScreenShotBundle\Exceptions;
  *
  * @author baptiste
  */
-class UnavailableRenderFormatException extends \Exception {
+class UnavailableRenderModeException extends \Exception {
     
-    public function __construct($format)
+    public function __construct($mode)
     {
-        parent::__construct(sprintf("%s format isn't available", $format), 0, null);
+        parent::__construct(sprintf("%s mode isn't available", $mode), 0, null);
     }
 }
 

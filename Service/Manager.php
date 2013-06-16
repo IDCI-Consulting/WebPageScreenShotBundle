@@ -10,6 +10,9 @@
 namespace IDCI\Bundle\WebPageScreenShotBundle\Service;
 
 use Symfony\Component\HttpFoundation\Request;
+use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UrlMissingException;
+use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderModeException;
+use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderFormatException;
 
 /**
  * Description of Manager
@@ -24,22 +27,43 @@ class Manager
     {
         $this->parameters = $parameters;
     }
+    
+    public function getScreenShot(Request $request)
+    {
+        return $this->generateScreenShot($request);
+    }
 
     public function generateScreenShot(Request $request)
     {
-        $url = $request->query->get('url');
+        $availableModes = array("file", "base64");
+        $availableFormats = array("pdf", "gif", "png", "jpeg", "jpg");
+        
+        if (!($url = $request->query->get('url'))) {
+            throw new UrlMissingException();
+        }
+        
         $mode = $this->getRenderParameter('mode', $request);
+        if (!in_array($mode, $availableModes)) {
+            throw new UnavailableRenderModeException($mode);
+        }
+
         $format = $this->getRenderParameter('format', $request);
-        $width = $this->getRenderParameter('width', $request);
-        $height = $this->getRenderParameter('height', $request);
+        if (!in_array($format, $availableFormats)) {
+            throw new UnavailableRenderFormatException($format);
+        }
+        
         $path = $this->getRenderParameter('path', $request);
 
-        return shell_exec(
-            sprintf(
-            'phantomjs ../vendor/idci/webpagescreenshot-bundle/IDCI/Bundle/WebPageScreenShotBundle/Service/pageRender.js 
-            %s %s %s %s %s %s', $url, $mode, $format, $width, $height, $path
-            )
-        );
+        $command = "phantomjs"
+                ." ../vendor/idci/webpagescreenshot-bundle/IDCI/Bundle/WebPageScreenShotBundle/Service/pageRender.js "
+                .$url. " "
+                .$mode. " "
+                .$format. " "
+                .$path
+        ;
+
+        var_dump(shell_exec($command)); die();
+        return shell_exec($command);
     }
 
     public function getRenderParameter($parameter, $request)
@@ -49,16 +73,6 @@ class Manager
             $parameterValue = $request->query->get($parameter);
         }
         return $parameterValue;
-    }
-
-    public function getInCache($file)
-    {
-        
-    }
-
-    public function setInCache($file)
-    {
-        
     }
 }
 
