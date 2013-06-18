@@ -20,15 +20,13 @@ class FrontController extends Controller
      * @Route("/screenshot")
      */
     public function screenAction(Request $request)
-    {       
+    {
+        $base64Png = $this->get('idci_web_page_screen_shot.manager')->getBase64ScreenShot($request);
+
         $response = new Response();
-
-        $output = $this->get('idci_web_page_screen_shot.manager')->getScreenShot($request);
-
-        //TODO
-        //$image = imagecreatefrompng(getcwd()."/screen_cache/tata.com.png"   );
         $response->headers->set('Content-Type', 'text/html');
-        $response->setContent("");
+        $response->setContent($base64Png);
+
         return $response;
     }
 }

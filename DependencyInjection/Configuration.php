@@ -34,7 +34,6 @@ class Configuration implements ConfigurationInterface
                     ->children()
                         ->integerNode('width')->defaultValue('160')->end()
                         ->integerNode('height')->defaultValue('144')->end()
-                        ->scalarNode('mode')->defaultValue('file')->end()
                         ->scalarNode('format')->defaultValue('png')->end()
                         ->scalarNode('path')->defaultValue('.')->end()
                     ->end()

@@ -11,7 +11,6 @@ namespace IDCI\Bundle\WebPageScreenShotBundle\Service;
 
 use Symfony\Component\HttpFoundation\Request;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UrlMissingException;
-use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderModeException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderFormatException;
 
 /**
@@ -27,24 +26,13 @@ class Manager
     {
         $this->parameters = $parameters;
     }
-    
-    public function getScreenShot(Request $request)
-    {
-        return $this->generateScreenShot($request);
-    }
 
-    public function generateScreenShot(Request $request)
+    public function getBase64ScreenShot(Request $request)
     {
-        $availableModes = array("file", "base64");
         $availableFormats = array("pdf", "gif", "png", "jpeg", "jpg");
         
         if (!($url = $request->query->get('url'))) {
             throw new UrlMissingException();
-        }
-        
-        $mode = $this->getRenderParameter('mode', $request);
-        if (!in_array($mode, $availableModes)) {
-            throw new UnavailableRenderModeException($mode);
         }
 
         $format = $this->getRenderParameter('format', $request);
@@ -57,12 +45,10 @@ class Manager
         $command = "phantomjs"
                 ." ../vendor/idci/webpagescreenshot-bundle/IDCI/Bundle/WebPageScreenShotBundle/Service/pageRender.js "
                 .$url. " "
-                .$mode. " "
                 .$format. " "
                 .$path
         ;
 
-        var_dump(shell_exec($command)); die();
         return shell_exec($command);
     }
 
