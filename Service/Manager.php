@@ -12,6 +12,8 @@ namespace IDCI\Bundle\WebPageScreenShotBundle\Service;
 use Symfony\Component\HttpFoundation\Request;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UrlMissingException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderFormatException;
+use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderModeException;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Description of Manager
@@ -21,35 +23,56 @@ use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderFormatExcept
 class Manager
 {
     protected $parameters;
-    
+
     public function __construct($parameters)
+    {
+        $this->setParameters($parameters);
+    }
+
+    public function getParameters()
+    {
+        return $this->parameters;
+    }
+
+    public function setParameters($parameters)
     {
         $this->parameters = $parameters;
     }
 
-    public function getBase64ScreenShot(Request $request)
+    public function getScreenShot(Request $request)
     {
-        $availableFormats = array("pdf", "gif", "png", "jpeg", "jpg");
-        
-        if (!($url = $request->query->get('url'))) {
-            throw new UrlMissingException();
+        $availableModes = array("base64", "file");
+        $availableFormats = array("gif", "png", "jpeg", "jpg");
+
+        $mode = $this->getRenderParameter('mode', $request);
+        if (!in_array($mode, $availableModes)) {
+            throw new UnavailableRenderModeException($mode);
         }
 
         $format = $this->getRenderParameter('format', $request);
         if (!in_array($format, $availableFormats)) {
             throw new UnavailableRenderFormatException($format);
         }
-        
-        $path = $this->getRenderParameter('path', $request);
+
+        if (!($url = $request->query->get('url'))) {
+            throw new UrlMissingException();
+        }
 
         $command = "phantomjs"
-                ." ../vendor/idci/webpagescreenshot-bundle/IDCI/Bundle/WebPageScreenShotBundle/Service/pageRender.js "
-                .$url. " "
-                .$format. " "
-                .$path
+            ." ../vendor/idci/webpagescreenshot-bundle/IDCI/Bundle/WebPageScreenShotBundle/Resources/public/js/imageRender.js "
+            .$url. " "
+            .$format. " "
+            .$request->getHost()
         ;
 
-        return shell_exec($command);
+        $screenshot = shell_exec($command);
+
+        //TODO - use lipimaginebundle to resize the picture and delete the big one, then if asked encode it in base64
+
+        $response = new Response($screenshot);
+        $response->headers->set('Content-Type', 'text/plain');
+
+        return $response;
     }
 
     public function getRenderParameter($parameter, $request)
@@ -58,6 +81,7 @@ class Manager
         if ($request->query->get($parameter) != null) {
             $parameterValue = $request->query->get($parameter);
         }
+
         return $parameterValue;
     }
 }
