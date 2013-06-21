@@ -10,6 +10,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class FrontController extends Controller
 {
@@ -20,7 +21,9 @@ class FrontController extends Controller
      */
     public function screenAction(Request $request)
     {
-        $response = $this->get('idci_web_page_screen_shot.manager')->getScreenShot($request);
+        $screenshot = $this->get('idci_web_page_screen_shot.manager')->getScreenShot($request);
+        $response = new Response($screenshot);
+        $response->headers->set('Content-Type', 'text/plain');
 
         return $response;
     }

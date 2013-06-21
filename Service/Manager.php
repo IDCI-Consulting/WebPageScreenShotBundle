@@ -13,7 +13,6 @@ use Symfony\Component\HttpFoundation\Request;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UrlMissingException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderFormatException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderModeException;
-use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Description of Manager
@@ -22,21 +21,21 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class Manager
 {
-    protected $parameters;
+    protected $webPageScreenShotParameters;
 
-    public function __construct($parameters)
+    public function __construct($webPageScreenShotParameters)
     {
-        $this->setParameters($parameters);
+        $this->setWebPageScreenShotParameters($webPageScreenShotParameters);
     }
 
-    public function getParameters()
+        public function getWebPageScreenShotParameters()
     {
-        return $this->parameters;
+        return $this->webPageScreenShotParameters;
     }
 
-    public function setParameters($parameters)
+    public function setWebPageScreenShotParameters($parameters)
     {
-        $this->parameters = $parameters;
+        $this->webPageScreenShotParameters = $parameters;
     }
 
     public function getScreenShot(Request $request)
@@ -58,26 +57,22 @@ class Manager
             throw new UrlMissingException();
         }
 
-        $command = "phantomjs"
-            ." ../vendor/idci/webpagescreenshot-bundle/IDCI/Bundle/WebPageScreenShotBundle/Resources/public/js/imageRender.js "
-            .$url. " "
-            .$format. " "
-            .$request->getHost()
-        ;
+        $screenshotBundlePath = "vendor/idci/webpagescreenshot-bundle/IDCI/Bundle/WebPageScreenShotBundle";
+        $command = sprintf("phantomjs ../%s/Lib/imageRender.js %s %s %s",
+                $screenshotBundlePath,
+                $url,
+                $format,
+                $request->getHost()
+        );
 
         $screenshot = shell_exec($command);
 
-        //TODO - use lipimaginebundle to resize the picture and delete the big one, then if asked encode it in base64
-
-        $response = new Response($screenshot);
-        $response->headers->set('Content-Type', 'text/plain');
-
-        return $response;
+        return $screenshot;
     }
 
     public function getRenderParameter($parameter, $request)
     {
-        $parameterValue = $this->parameters['render'][$parameter];
+        $parameterValue = $this->webPageScreenShotParameters['render'][$parameter];
         if ($request->query->get($parameter) != null) {
             $parameterValue = $request->query->get($parameter);
         }
