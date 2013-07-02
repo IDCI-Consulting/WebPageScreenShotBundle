@@ -14,7 +14,7 @@ use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderModeExceptio
 
 class Manager
 {
-    protected $defaultParameters;
+    protected $configurationParameters;
     protected $givenParameters;
 
     public function __construct($defaultParameters)
@@ -23,23 +23,23 @@ class Manager
     }
 
     /**
-     * Get default Parameters
+     * Get configuration Parameters
      *
      * @return array 
      */
-    public function getDefaultParameters()
+    public function getConfigurationParameters()
     {
-        return $this->defaultParameters;
+        return $this->configurationParameters;
     }
 
     /**
-     * Set default Parameters
+     * Set configuration Parameters
      *
      * @param array
      */
-    public function setDefaultParameters($defaultParameters)
+    public function setConfigurationParameters($defaultParameters)
     {
-        $this->defaultParameters = $defaultParameters;
+        $this->configurationParameters = $defaultParameters;
     }
 
     /**
@@ -85,11 +85,9 @@ class Manager
         if (!in_array($format, $availableFormats)) {
             throw new UnavailableRenderFormatException($format);
         }
-        
-        $phantomjsBinPath = $this->defaultParameters['phantomjs_bin_path'];
 
         $command = sprintf("%s %s/../Lib/imageRender.js %s %s",
-                $phantomjsBinPath,
+                $this->configurationParameters['phantomjs_bin_path'],
                 __DIR__,
                 $url,
                 $format
@@ -110,8 +108,8 @@ class Manager
     {
         if (isset($this->givenParameters[$name])) {
             return $this->givenParameters[$name];
-        } else if (isset($this->defaultParameters['render'][$name])) {
-            return $this->defaultParameters['render'][$name];
+        } else if (isset($this->configurationParameters['render'][$name])) {
+            return $this->configurationParameters['render'][$name];
         } else {
             throw new \Exception(sprintf("Parameter '%s' is missing", $name));
         }
