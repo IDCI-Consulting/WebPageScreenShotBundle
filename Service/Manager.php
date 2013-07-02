@@ -19,7 +19,7 @@ class Manager
 
     public function __construct($defaultParameters)
     {
-        $this->setDefaultParameters($defaultParameters);
+        $this->setConfigurationParameters($defaultParameters);
     }
 
     /**
@@ -71,11 +71,12 @@ class Manager
      */
     public function createScreenShot($url, $givenParameters = array())
     {
+        //we retrieve and check parameters
         $this->setGivenParameters($givenParameters);
 
         $availableModes = array("base64", "file");
         $availableFormats = array("gif", "png", "jpeg", "jpg");
-
+        
         $mode = $this->getRenderParameter('mode');
         if (!in_array($mode, $availableModes)) {
             throw new UnavailableRenderModeException($mode);
@@ -86,6 +87,15 @@ class Manager
             throw new UnavailableRenderFormatException($format);
         }
 
+        //we check the cache if asked
+        if($this->configurationParameters['cache']['enabled']) {
+            $fileName = $this->getFileName($url, $format);
+            if(file_exists(sprintf("%s/screenshots/%s", getcwd(), $fileName))) {
+                return sprintf("/screenshots/%s", $fileName);
+            }
+        }
+
+        //we launch the screenshot generation
         $command = sprintf("%s %s/../Lib/imageRender.js %s %s",
                 $this->configurationParameters['phantomjs_bin_path'],
                 __DIR__,
@@ -93,9 +103,7 @@ class Manager
                 $format
         );
 
-        $path = shell_exec($command);
-
-        return $path;
+        return shell_exec($command);
     }
 
     /**
@@ -113,6 +121,22 @@ class Manager
         } else {
             throw new \Exception(sprintf("Parameter '%s' is missing", $name));
         }
+    }
+    
+    /**
+     * Get the name of a screenshot according to a given url
+     *
+     * @param string: the url
+     * @return string: the file name
+     */
+    public function getFileName($url, $format)
+    {
+        if (strpos($url, "http://www.") === 0)
+            $fileName = sprintf("%s.%s", substr($url, 11), $format);
+        else
+            $fileName = sprintf("%s.%s", substr($url, 7), $format);
+
+        return str_replace(array("/", "?", "="),".", $fileName);
     }
 }
 
