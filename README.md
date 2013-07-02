@@ -39,18 +39,3 @@ public function registerBundles()
 ```
 
 Now the Bundle is installed.
-
-TODO
-====
-
-To test with all image types
-Add lip imagine bundle to resize png according to the conf parameters
-Images should be cached
-
-Example: how to retrieve and decode a png in php
-```php
-    $curl = curl_init(http://myScreenshotServerAddress/screenshot?url=http://www.test.com);
-    curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-    $bin_file = base64_decode(curl_exec($curl));
-    file_put_contents("test.png", $png_bin);
-```
