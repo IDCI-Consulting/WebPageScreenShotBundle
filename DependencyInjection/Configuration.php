@@ -29,7 +29,7 @@ class Configuration implements ConfigurationInterface
 
         $rootNode
             ->children()
-                ->scalarNode('phantomjs_bin_path')->cannotBeEmpty()->end()
+                ->scalarNode('phantomjs_bin_path')->defaultValue('/usr/bin/phantomjs')->end()
                 ->arrayNode('render')
                     ->children()
                         ->integerNode('width')->defaultValue('160')->end()

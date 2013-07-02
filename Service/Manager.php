@@ -9,75 +9,112 @@
 
 namespace IDCI\Bundle\WebPageScreenShotBundle\Service;
 
-use Symfony\Component\HttpFoundation\Request;
-use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UrlMissingException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderFormatException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderModeException;
 
-/**
- * Description of Manager
- *
- * @author baptiste
- */
 class Manager
 {
-    protected $webPageScreenShotParameters;
+    protected $defaultParameters;
+    protected $givenParameters;
 
-    public function __construct($webPageScreenShotParameters)
+    public function __construct($defaultParameters)
     {
-        $this->setWebPageScreenShotParameters($webPageScreenShotParameters);
+        $this->setDefaultParameters($defaultParameters);
     }
 
-        public function getWebPageScreenShotParameters()
+    /**
+     * Get default Parameters
+     *
+     * @return array 
+     */
+    public function getDefaultParameters()
     {
-        return $this->webPageScreenShotParameters;
+        return $this->defaultParameters;
     }
 
-    public function setWebPageScreenShotParameters($parameters)
+    /**
+     * Set default Parameters
+     *
+     * @param array
+     */
+    public function setDefaultParameters($defaultParameters)
     {
-        $this->webPageScreenShotParameters = $parameters;
+        $this->defaultParameters = $defaultParameters;
     }
 
-    public function getScreenShot(Request $request)
+    /**
+     * Get given Parameters
+     *
+     * @return array 
+     */
+    public function getGivenParameters()
     {
+        return $this->givenParameters;
+    }
+
+    /**
+     * Set given Parameters
+     *
+     * @param array
+     */
+    public function setGivenParameters($givenParameters)
+    {
+        $this->givenParameters = $givenParameters;
+    }
+
+    /**
+     * Create a screenshot
+     *
+     * @param string: a website url
+     * @param array: parameters about the screenshot to be generated
+     * @return string: the path of the generated screenshot 
+     */
+    public function createScreenShot($url, $givenParameters = array())
+    {
+        $this->setGivenParameters($givenParameters);
+
         $availableModes = array("base64", "file");
         $availableFormats = array("gif", "png", "jpeg", "jpg");
 
-        $mode = $this->getRenderParameter('mode', $request);
+        $mode = $this->getRenderParameter('mode');
         if (!in_array($mode, $availableModes)) {
             throw new UnavailableRenderModeException($mode);
         }
 
-        $format = $this->getRenderParameter('format', $request);
+        $format = $this->getRenderParameter('format');
         if (!in_array($format, $availableFormats)) {
             throw new UnavailableRenderFormatException($format);
         }
+        
+        $phantomjsBinPath = $this->defaultParameters['phantomjs_bin_path'];
 
-        if (!($url = $request->query->get('url'))) {
-            throw new UrlMissingException();
-        }
-
-        $screenshotBundlePath = "vendor/idci/webpagescreenshot-bundle/IDCI/Bundle/WebPageScreenShotBundle";
-        $command = sprintf("phantomjs ../%s/Lib/imageRender.js %s %s %s",
-                $screenshotBundlePath,
+        $command = sprintf("%s %s/../Lib/imageRender.js %s %s",
+                $phantomjsBinPath,
+                __DIR__,
                 $url,
-                $format,
-                $request->getHost()
+                $format
         );
 
-        $screenshot = shell_exec($command);
+        $path = shell_exec($command);
 
-        return $screenshot;
+        return $path;
     }
 
-    public function getRenderParameter($parameter, $request)
+    /**
+     * Get either a query parameter, or a conf parameter if none given
+     *
+     * @param string: the name of the parameter to get
+     * @return string: the value of the parameter 
+     */
+    public function getRenderParameter($name)
     {
-        $parameterValue = $this->webPageScreenShotParameters['render'][$parameter];
-        if ($request->query->get($parameter) != null) {
-            $parameterValue = $request->query->get($parameter);
+        if (isset($this->givenParameters[$name])) {
+            return $this->givenParameters[$name];
+        } else if (isset($this->defaultParameters['render'][$name])) {
+            return $this->defaultParameters['render'][$name];
+        } else {
+            throw new \Exception(sprintf("Parameter '%s' is missing", $name));
         }
-
-        return $parameterValue;
     }
 }
 

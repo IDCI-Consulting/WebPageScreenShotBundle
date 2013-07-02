@@ -9,11 +9,11 @@
 
 namespace IDCI\Bundle\WebPageScreenShotBundle\Exceptions;
 
-class UnavailableRenderModeException extends \Exception {
+class MissingParameterException extends \Exception {
     
-    public function __construct($mode)
+    public function __construct($param)
     {
-        parent::__construct(sprintf("%s mode isn't available", $mode), 0, null);
+        parent::__construct(sprintf("Parameter %s is missing", $param), 0, null);
     }
 }
 
