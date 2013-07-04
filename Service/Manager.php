@@ -11,17 +11,36 @@ namespace IDCI\Bundle\WebPageScreenShotBundle\Service;
 
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderFormatException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderModeException;
+use Gregwar\ImageBundle\Services\ImageHandling;
 
 class Manager
 {
     protected $configurationParameters;
+    protected $imageHandling;
     protected $givenParameters;
 
-    public function __construct($defaultParameters)
+    public function __construct($configurationParameters, ImageHandling $imageHandling)
     {
-        $this->setConfigurationParameters($defaultParameters);
+        $this->setConfigurationParameters($configurationParameters);
+        $this->setImageHandling($imageHandling);
     }
 
+    /**
+     * Get image handling service
+     */
+    public function getImageHandling()
+    {
+        return $this->imageHandling;
+    }
+
+    /**
+     * Set image handling service
+     */
+    public function setImageHandling($imageHandling)
+    {
+        $this->imageHandling = $imageHandling;
+    }
+    
     /**
      * Get configuration Parameters
      *
@@ -87,11 +106,24 @@ class Manager
             throw new UnavailableRenderFormatException($format);
         }
 
-        //we check the cache if asked
+        $width = $this->getRenderParameter('width');
+        $height = $this->getRenderParameter('height');
+
+        // we create and resize the screenshot according to the cache configuration values, and what's in the cache
         if($this->configurationParameters['cache']['enabled']) {
-            $fileName = $this->getFileName($url, $format);
-            if(file_exists(sprintf("%s/screenshots/%s", getcwd(), $fileName))) {
-                return sprintf("/screenshots/%s", $fileName);
+
+            $fullSizeScreenshotName = $this->getFileName($url, $format);
+            $fullSizeScreenshotPath = sprintf("%s/screenshots/full_size/%s", getcwd(), $fullSizeScreenshotName);
+            $thumbScreenshotName = sprintf("%sx%s%s", $width, $height, $fullSizeScreenshotName);
+            $thumbScreenshotPath = sprintf("%s/screenshots/thumb/%s", getcwd(), $thumbScreenshotName);
+
+            if(file_exists($thumbScreenshotPath)) {
+                    return $thumbScreenshotPath;
+            }
+
+            if(file_exists($fullSizeScreenshotPath)) {
+                    $this->resizeScreenShot($fullSizeScreenshotPath, $thumbScreenshotPath, $width, $height, $format);
+                    return $thumbScreenshotPath;
             }
         }
 
@@ -102,8 +134,30 @@ class Manager
                 $url,
                 $format
         );
+        $fullSizeScreenshotPath = sprintf("%s/%s", getcwd(), shell_exec($command));
 
-        return shell_exec($command);
+        //we resized the screenshot
+        sleep(5);
+        $thumbScreenshotName = sprintf("%sx%s%s", $width, $height, $fullSizeScreenshotName);
+        $thumbScreenshotPath = sprintf("%s/screenshots/thumb/%s", getcwd(), $thumbScreenshotName);
+        $this->resizeScreenShot($fullSizeScreenshotPath, $thumbScreenshotPath, $width, $height, $format);
+        
+        return $thumbScreenshotPath;
+    }
+
+    
+    /**
+     * Resize an image
+     *
+     * @param string: the path of the image to be resized
+     * @param string: the path of the resized image
+     * @param integer: the width of the image
+     * @param integer: the height of the image
+     * @param string : the format of the image (png, gif or jpg)
+     */
+    public function resizeScreenShot($fullSizeScreenshotPath, $thumbScreenshotPath ,$width, $height, $format)
+    {
+        $this->getImageHandling()->open($fullSizeScreenshotPath)->resize($width, $height)->save($thumbScreenshotPath, $format);
     }
 
     /**

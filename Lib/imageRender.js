@@ -10,8 +10,8 @@ page.open(url, function () {
     var regex = new RegExp("[?=/]", "g");
     var imageName = getFileName(url)+"."+format;
     imageName = imageName.replace(regex,".");
-    page.render("screenshots/"+imageName);
-    console.log("/screenshots/"+imageName);
+    page.render("screenshots/full_size/"+imageName);
+    console.log("screenshots/full_size/"+imageName);
     phantom.exit();
 });
 
