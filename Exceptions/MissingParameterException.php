@@ -3,7 +3,7 @@
 /**
  * 
  * @author:  Baptiste BOUCHEREAU <baptiste.bouchereau@idci-consulting.fr>
- * @licence: GPL
+ * @license: GPL
  *
  */
 
