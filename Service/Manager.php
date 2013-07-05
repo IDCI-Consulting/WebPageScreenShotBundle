@@ -17,15 +17,35 @@ use Doctrine\Common\Cache\PhpFileCache;
 class Manager
 {
     protected $configurationParameters;
+    protected $givenParameters;
     protected $imageHandling;
     protected $cache;
-    protected $givenParameters;
+    protected $kernel;
 
-    public function __construct($configurationParameters, ImageHandling $imageHandling, PhpFileCache $cache)
+    public function __construct($configurationParameters, ImageHandling $imageHandling, PhpFileCache $cache, $kernel)
     {
         $this->setConfigurationParameters($configurationParameters);
         $this->setImageHandling($imageHandling);
         $this->setCache($cache);
+        $this->setKernel($kernel);
+    }
+
+    /**
+     * Get the kernel
+     * 
+     * @return Kernel
+     */
+    public function getKernel()
+    {
+        return $this->kernel;
+    }
+
+    /**
+     * Set the kernel
+     */
+    public function setKernel($kernel)
+    {
+        $this->kernel = $kernel;
     }
 
     /**
@@ -59,11 +79,11 @@ class Manager
     /**
      * Set image handling
      */
-    public function setImageHandling($imageHandling)
+    public function setImageHandling($image_handling)
     {
-        $this->imageHandling = $imageHandling;
+        $this->imageHandling = $image_handling;
     }
-    
+
     /**
      * Get configuration Parameters
      *
@@ -79,9 +99,9 @@ class Manager
      *
      * @param array
      */
-    public function setConfigurationParameters($defaultParameters)
+    public function setConfigurationParameters($default_parameters)
     {
-        $this->configurationParameters = $defaultParameters;
+        $this->configurationParameters = $default_parameters;
     }
 
     /**
@@ -99,9 +119,9 @@ class Manager
      *
      * @param array
      */
-    public function setGivenParameters($givenParameters)
+    public function setGivenParameters($given_parameters)
     {
-        $this->givenParameters = $givenParameters;
+        $this->givenParameters = $given_parameters;
     }
 
     /**
@@ -111,15 +131,15 @@ class Manager
      * @param array: parameters about the screenshot to be generated
      * @return string: the path of the generated screenshot 
      */
-    public function createScreenShot($url, $givenParameters = array())
+    public function createScreenshot($url, $given_parameters = array())
     {
-        //we retrieve and check parameters
-        $this->setGivenParameters($givenParameters);
+        //Retrieve and check parameters
+        $this->setGivenParameters($given_parameters);
         $conf = $this->getConfigurationParameters();
 
         $availableModes = array("base64", "file");
         $availableFormats = array("gif", "png", "jpeg", "jpg");
-        
+
         $mode = $this->getRenderParameter('mode');
         if (!in_array($mode, $availableModes)) {
             throw new UnavailableRenderModeException($mode);
@@ -133,13 +153,13 @@ class Manager
         $width = $this->getRenderParameter('width');
         $height = $this->getRenderParameter('height');
 
-        // we create and resize the screenshot according to the cache configuration values, and what's in the cache
+        //Creating and resizing the screenshot according to the "cache enabled" value, and what's in the cache
         if($conf['cache']['enabled']) {
 
             $renderedScreenshotName = $this->getFileName($url, $format);
-            $renderedScreenshotPath = sprintf("%s/screenshots/rendered/%s", getcwd(), $renderedScreenshotName);
-            $resizedScreenshotName = sprintf("%sx%s%s", $width, $height, $renderedScreenshotName);
-            $resizedScreenshotPath = sprintf("%s/screenshots/resized/%s", getcwd(), $resizedScreenshotName);
+            $renderedScreenshotPath = sprintf("%s%s", $this->getCacheDirectory(), $renderedScreenshotName);
+            $resizedScreenshotName  = sprintf("%sx%s%s", $width, $height, $renderedScreenshotName);
+            $resizedScreenshotPath  = sprintf("%s%s", $this->getCacheDirectory(), $resizedScreenshotName);
 
             if($cachedResizedScreenshotName = $this->getImageFromCache($resizedScreenshotName)) {
                 return $cachedResizedScreenshotName;
@@ -152,23 +172,21 @@ class Manager
             }
         }
 
-        //we generate the screenshot
-        $command = sprintf("%s %s/../Lib/imageRender.js %s %s",
+        //Generating the screenshot
+        $command = sprintf("%s %s/../Lib/imageRender.js %s %s %s",
                 $conf['phantomjs_bin_path'],
                 __DIR__,
                 $url,
-                $format
+                $format,
+                $this->getCacheDirectory()
         );
-        $renderedScreenshotPath = sprintf("%s/%s", getcwd(), shell_exec($command));
+        $renderedScreenshotPath = sprintf("%s", shell_exec($command));
         $this->cacheImage($renderedScreenshotName, $conf['cache']['delay']);
-        
-        //we resized the screenshot
-        $renderedScreenshotName = $this->getFileName($url, $format);
-        $resizedScreenshotName = sprintf("%sx%s%s", $width, $height, $renderedScreenshotName);
-        $resizedScreenshotPath = sprintf("%s/screenshots/resized/%s", getcwd(), $resizedScreenshotName);
+
+        //Resizing the screenshot
         $this->resizeScreenShot($renderedScreenshotPath, $resizedScreenshotPath, $width, $height, $format);
         $this->cacheImage($resizedScreenshotName, $conf['cache']['delay']);
-        
+
         return $resizedScreenshotPath;
     }
 
@@ -181,12 +199,12 @@ class Manager
      * @param integer: the height of the image
      * @param string : the format of the image (png, gif or jpg)
      */
-    public function resizeScreenShot($renderedScreenshotPath, $resizedScreenshotPath ,$width, $height, $format)
+    public function resizeScreenShot($rendered_screenshot_path, $resized_screenshot_path ,$width, $height, $format)
     {
         $this->getImageHandling()
-             ->open($renderedScreenshotPath)
+             ->open($rendered_screenshot_path)
              ->resize($width, $height)
-             ->save($resizedScreenshotPath, $format);
+             ->save($resized_screenshot_path, $format);
     }
 
     /**
@@ -197,10 +215,12 @@ class Manager
      */
     public function getRenderParameter($name)
     {
-        if (isset($this->givenParameters[$name])) {
-            return $this->givenParameters[$name];
-        } else if (isset($this->configurationParameters['render'][$name])) {
-            return $this->configurationParameters['render'][$name];
+        $params = $this->getGivenParameters();
+        $conf = $this->getConfigurationParameters();
+        if (isset($params[$name])) {
+            return $params[$name];
+        } else if (isset($conf['render'][$name])) {
+            return $conf['render'][$name];
         } else {
             throw new \Exception(sprintf("Parameter '%s' is missing", $name));
         }
@@ -243,12 +263,13 @@ class Manager
      */
     public function cacheImage($image_name)
     {
-        if($this->configurationParameters['cache']['enabled']) {
+        $conf = $this->getConfigurationParameters();
+        if($conf['cache']['enabled']) {
             $cache = $this->getCache();
             $cache->save(
                 $this->imageToHash($image_name),
                 $image_name,
-                $this->configurationParameters['cache']['delay']
+                $conf['cache']['delay']
             );
         }
     }
@@ -264,6 +285,15 @@ class Manager
         $cache = $this->getCache();
 
         return $cache->fetch($this->imageToHash($image_name));
+    }
+
+    /**
+     * Get the cache directory
+     *
+     * @return string : the directory path
+     */
+    public function getCacheDirectory() {
+        return sprintf("%s/../web/screenshots_cache/", $this->getKernel()->getRootDir());
     }
 }
 

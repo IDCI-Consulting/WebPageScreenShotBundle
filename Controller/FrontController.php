@@ -33,7 +33,7 @@ class FrontController extends Controller
             array("url" => $url)
         );
 
-        $screenshot = $this->get('idci_web_page_screen_shot.manager')->createScreenShot($url, $params);
+        $screenshot = $this->get('idci_web_page_screen_shot.manager')->createScreenshot($url, $params);
         $response = new Response($screenshot);
         $response->headers->set('Content-Type', 'text/plain');
 
