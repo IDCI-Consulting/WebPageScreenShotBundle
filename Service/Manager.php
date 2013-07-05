@@ -157,18 +157,19 @@ class Manager
         if($conf['cache']['enabled']) {
 
             $renderedScreenshotName = $this->getFileName($url, $format);
-            $renderedScreenshotPath = sprintf("%s%s", $this->getCacheDirectory(), $renderedScreenshotName);
+            $renderedScreenshotAbsolutePath = sprintf("%s%s", $this->getAbsoluteCacheDirectory(), $renderedScreenshotName);
             $resizedScreenshotName  = sprintf("%sx%s%s", $width, $height, $renderedScreenshotName);
+            $resizedScreenshotAbsolutePath  = sprintf("%s%s", $this->getAbsoluteCacheDirectory(), $resizedScreenshotName);
             $resizedScreenshotPath  = sprintf("%s%s", $this->getCacheDirectory(), $resizedScreenshotName);
 
             if($cachedResizedScreenshotName = $this->getImageFromCache($resizedScreenshotName)) {
-                return $cachedResizedScreenshotName;
+                return $this->getImage($resizedScreenshotName, $mode, $format);
             }
 
             if($cachedRenderedScreenshotName = $this->getImageFromCache($renderedScreenshotName)) {
-                $this->resizeScreenShot($renderedScreenshotPath, $resizedScreenshotPath, $width, $height, $format);
+                $this->resizeScreenShot($renderedScreenshotAbsolutePath, $resizedScreenshotAbsolutePath, $width, $height, $format);
                 $this->cacheImage($resizedScreenshotName);
-                return $resizedScreenshotName;
+                return $this->getImage($resizedScreenshotName, $mode, $format);
             }
         }
 
@@ -178,18 +179,46 @@ class Manager
                 __DIR__,
                 $url,
                 $format,
-                $this->getCacheDirectory()
+                $this->getAbsoluteCacheDirectory()
         );
-        $renderedScreenshotPath = sprintf("%s", shell_exec($command));
+        $renderedScreenshotAbsolutePath = sprintf("%s", shell_exec($command));
         $this->cacheImage($renderedScreenshotName, $conf['cache']['delay']);
 
         //Resizing the screenshot
-        $this->resizeScreenShot($renderedScreenshotPath, $resizedScreenshotPath, $width, $height, $format);
+        $this->resizeScreenShot($renderedScreenshotAbsolutePath, $resizedScreenshotAbsolutePath, $width, $height, $format);
         $this->cacheImage($resizedScreenshotName, $conf['cache']['delay']);
-
-        return $resizedScreenshotPath;
+        
+        return $this->getImage($renderedScreenshotName, $mode, $format);
     }
 
+    /**
+     * Get an image according to the mode
+     * 
+     * @return string: either the path or a base64string
+     */
+    function getImage($fileName, $mode, $format) {
+        if ($mode == "file") {
+            $filePath = sprintf("%s%s", $this->getCacheDirectory(), $fileName);
+            return $filePath;
+        } else {
+            $absoluteFilePath = sprintf("%s%s", $this->getAbsoluteCacheDirectory(), $fileName);
+            return $this->base64_encode_image($absoluteFilePath, $format);
+        }
+    }
+    
+    /**
+     * Encode an image in base64
+     * 
+     * @return string: the base64-encoded image
+     */
+    function base64_encode_image ($file_name, $file_type)
+    {
+        if (file_exists($file_name)) {
+            $imgbinary = fread(fopen($file_name, "r"), filesize($file_name));
+            return "data:image/" . $file_type . ";base64," . base64_encode($imgbinary);
+        }
+    }
+    
     /**
      * Resize an image
      *
@@ -288,12 +317,21 @@ class Manager
     }
 
     /**
-     * Get the cache directory
+     * Get the absolute cache directory path
+     *
+     * @return string : the absolute directory path
+     */
+    public function getAbsoluteCacheDirectory() {
+        return sprintf("%s/../web/screenshots_cache/", $this->getKernel()->getRootDir());
+    }
+
+    /**
+     * Get the cache directory path
      *
      * @return string : the directory path
      */
     public function getCacheDirectory() {
-        return sprintf("%s/../web/screenshots_cache/", $this->getKernel()->getRootDir());
+        return "/screenshots_cache/";
     }
 }
 

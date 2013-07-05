@@ -34,8 +34,8 @@ class FrontController extends Controller
         );
 
         $screenshot = $this->get('idci_web_page_screen_shot.manager')->createScreenshot($url, $params);
-        $response = new Response($screenshot);
-        $response->headers->set('Content-Type', 'text/plain');
+        $response = new Response("<img src =\"".$screenshot."\">");
+        $response->headers->set('Content-Type', 'text/html');
 
         return $response;
     }
