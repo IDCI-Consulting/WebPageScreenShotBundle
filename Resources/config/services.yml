@@ -1,4 +1,8 @@
 services:
+    idci_cache:
+        class: Doctrine\Common\Cache\PhpFileCache
+        arguments: [%kernel.cache_dir%]
+
     idci_web_page_screen_shot.manager:
         class: IDCI\Bundle\WebPageScreenShotBundle\Service\Manager
-        arguments: [%webPageScreenShotConfiguration%, @image.handling]
+        arguments: [%webPageScreenShotConfiguration%, @image.handling, @idci_cache]

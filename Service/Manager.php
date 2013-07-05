@@ -12,21 +12,44 @@ namespace IDCI\Bundle\WebPageScreenShotBundle\Service;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderFormatException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderModeException;
 use Gregwar\ImageBundle\Services\ImageHandling;
+use Doctrine\Common\Cache\PhpFileCache;
 
 class Manager
 {
     protected $configurationParameters;
     protected $imageHandling;
+    protected $cache;
     protected $givenParameters;
 
-    public function __construct($configurationParameters, ImageHandling $imageHandling)
+    public function __construct($configurationParameters, ImageHandling $imageHandling, PhpFileCache $cache)
     {
         $this->setConfigurationParameters($configurationParameters);
         $this->setImageHandling($imageHandling);
+        $this->setCache($cache);
     }
 
     /**
-     * Get image handling service
+     * Get the cache
+     * 
+     * @return PhpFileCache
+     */
+    public function getCache()
+    {
+        return $this->cache;
+    }
+
+    /**
+     * Set the cache
+     */
+    public function setCache($cache)
+    {
+        $this->cache = $cache;
+    }
+
+    /**
+     * Get image handling
+     * 
+     * @return ImageHandling
      */
     public function getImageHandling()
     {
@@ -34,7 +57,7 @@ class Manager
     }
 
     /**
-     * Set image handling service
+     * Set image handling
      */
     public function setImageHandling($imageHandling)
     {
@@ -92,6 +115,7 @@ class Manager
     {
         //we retrieve and check parameters
         $this->setGivenParameters($givenParameters);
+        $conf = $this->getConfigurationParameters();
 
         $availableModes = array("base64", "file");
         $availableFormats = array("gif", "png", "jpeg", "jpg");
@@ -110,42 +134,44 @@ class Manager
         $height = $this->getRenderParameter('height');
 
         // we create and resize the screenshot according to the cache configuration values, and what's in the cache
-        if($this->configurationParameters['cache']['enabled']) {
+        if($conf['cache']['enabled']) {
 
-            $fullSizeScreenshotName = $this->getFileName($url, $format);
-            $fullSizeScreenshotPath = sprintf("%s/screenshots/full_size/%s", getcwd(), $fullSizeScreenshotName);
-            $thumbScreenshotName = sprintf("%sx%s%s", $width, $height, $fullSizeScreenshotName);
-            $thumbScreenshotPath = sprintf("%s/screenshots/thumb/%s", getcwd(), $thumbScreenshotName);
+            $renderedScreenshotName = $this->getFileName($url, $format);
+            $renderedScreenshotPath = sprintf("%s/screenshots/rendered/%s", getcwd(), $renderedScreenshotName);
+            $resizedScreenshotName = sprintf("%sx%s%s", $width, $height, $renderedScreenshotName);
+            $resizedScreenshotPath = sprintf("%s/screenshots/resized/%s", getcwd(), $resizedScreenshotName);
 
-            if(file_exists($thumbScreenshotPath)) {
-                    return $thumbScreenshotPath;
+            if($cachedResizedScreenshotName = $this->getImageFromCache($resizedScreenshotName)) {
+                return $cachedResizedScreenshotName;
             }
 
-            if(file_exists($fullSizeScreenshotPath)) {
-                    $this->resizeScreenShot($fullSizeScreenshotPath, $thumbScreenshotPath, $width, $height, $format);
-                    return $thumbScreenshotPath;
+            if($cachedRenderedScreenshotName = $this->getImageFromCache($renderedScreenshotName)) {
+                $this->resizeScreenShot($renderedScreenshotPath, $resizedScreenshotPath, $width, $height, $format);
+                $this->cacheImage($resizedScreenshotName);
+                return $resizedScreenshotName;
             }
         }
 
-        //we launch the screenshot generation
+        //we generate the screenshot
         $command = sprintf("%s %s/../Lib/imageRender.js %s %s",
-                $this->configurationParameters['phantomjs_bin_path'],
+                $conf['phantomjs_bin_path'],
                 __DIR__,
                 $url,
                 $format
         );
-        $fullSizeScreenshotPath = sprintf("%s/%s", getcwd(), shell_exec($command));
-
-        //we resized the screenshot
-        sleep(5);
-        $thumbScreenshotName = sprintf("%sx%s%s", $width, $height, $fullSizeScreenshotName);
-        $thumbScreenshotPath = sprintf("%s/screenshots/thumb/%s", getcwd(), $thumbScreenshotName);
-        $this->resizeScreenShot($fullSizeScreenshotPath, $thumbScreenshotPath, $width, $height, $format);
+        $renderedScreenshotPath = sprintf("%s/%s", getcwd(), shell_exec($command));
+        $this->cacheImage($renderedScreenshotName, $conf['cache']['delay']);
         
-        return $thumbScreenshotPath;
+        //we resized the screenshot
+        $renderedScreenshotName = $this->getFileName($url, $format);
+        $resizedScreenshotName = sprintf("%sx%s%s", $width, $height, $renderedScreenshotName);
+        $resizedScreenshotPath = sprintf("%s/screenshots/resized/%s", getcwd(), $resizedScreenshotName);
+        $this->resizeScreenShot($renderedScreenshotPath, $resizedScreenshotPath, $width, $height, $format);
+        $this->cacheImage($resizedScreenshotName, $conf['cache']['delay']);
+        
+        return $resizedScreenshotPath;
     }
 
-    
     /**
      * Resize an image
      *
@@ -155,9 +181,12 @@ class Manager
      * @param integer: the height of the image
      * @param string : the format of the image (png, gif or jpg)
      */
-    public function resizeScreenShot($fullSizeScreenshotPath, $thumbScreenshotPath ,$width, $height, $format)
+    public function resizeScreenShot($renderedScreenshotPath, $resizedScreenshotPath ,$width, $height, $format)
     {
-        $this->getImageHandling()->open($fullSizeScreenshotPath)->resize($width, $height)->save($thumbScreenshotPath, $format);
+        $this->getImageHandling()
+             ->open($renderedScreenshotPath)
+             ->resize($width, $height)
+             ->save($resizedScreenshotPath, $format);
     }
 
     /**
@@ -176,7 +205,7 @@ class Manager
             throw new \Exception(sprintf("Parameter '%s' is missing", $name));
         }
     }
-    
+
     /**
      * Get the name of a screenshot according to a given url
      *
@@ -185,12 +214,56 @@ class Manager
      */
     public function getFileName($url, $format)
     {
-        if (strpos($url, "http://www.") === 0)
+        //TODO check parse_url() function
+        if (strpos($url, "http://www.") === 0) {
             $fileName = sprintf("%s.%s", substr($url, 11), $format);
-        else
+        } else {
             $fileName = sprintf("%s.%s", substr($url, 7), $format);
+        }
 
         return str_replace(array("/", "?", "="),".", $fileName);
+    }
+
+    /**
+     * Get hash from image
+     *
+     * @param $image_name string
+     * @return string : md5
+     */
+    public function imageToHash($image_name)
+    {
+        return md5($image_name);
+    }
+
+    /**
+     * Cache an image
+     *
+     * @param $image_name string
+     * @param $ttl integer
+     */
+    public function cacheImage($image_name)
+    {
+        if($this->configurationParameters['cache']['enabled']) {
+            $cache = $this->getCache();
+            $cache->save(
+                $this->imageToHash($image_name),
+                $image_name,
+                $this->configurationParameters['cache']['delay']
+            );
+        }
+    }
+
+    /**
+     * Get an image from the cache
+     *
+     * @param $image_name string
+     * @return string
+     */
+    public function getImageFromCache($image_name)
+    {
+        $cache = $this->getCache();
+
+        return $cache->fetch($this->imageToHash($image_name));
     }
 }
 
