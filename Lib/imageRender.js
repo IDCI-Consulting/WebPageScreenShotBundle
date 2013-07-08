@@ -11,8 +11,8 @@ page.open(url, function () {
     var regex = new RegExp("[?=/]", "g");
     var imageName = getFileName(url)+"."+format;
     imageName = imageName.replace(regex,".");
-    page.render(cacheDir+'/'+imageName);
-    console.log(cacheDir+'/'+imageName);
+    page.render(cacheDir+imageName);
+    console.log(cacheDir+imageName);
     phantom.exit();
 });
 

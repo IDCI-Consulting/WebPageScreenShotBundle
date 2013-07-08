@@ -40,6 +40,11 @@ EOT
                 InputArgument::OPTIONAL,
                 'What will be the height of the screenshot?'
             )
+            ->addArgument(
+                'mode',
+                InputArgument::OPTIONAL,
+                'Is this a file or a base64 encoded string?'
+            )
         ;
     }
     
@@ -48,6 +53,7 @@ EOT
         $url = $input->getArgument('url');
         $width = $input->getArgument('width');
         $height = $input->getArgument('height');
+        $mode = $input->getArgument('mode');
         $params = array();
 
         if($width) {
@@ -55,6 +61,10 @@ EOT
         }
         if($height) {
             $params['height'] = $height;
+        }
+        
+        if($mode) {
+            $params['mode'] = $mode;
         }
 
         $screenshot = $this->getContainer()->get('idci_web_page_screen_shot.manager')->createScreenshot($url, $params);

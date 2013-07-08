@@ -133,7 +133,7 @@ class Manager
      */
     public function createScreenshot($url, $given_parameters = array())
     {
-        //Retrieve and check parameters
+        // Retrieve and check parameters
         $this->setGivenParameters($given_parameters);
         $conf = $this->getConfigurationParameters();
 
@@ -153,14 +153,14 @@ class Manager
         $width = $this->getRenderParameter('width');
         $height = $this->getRenderParameter('height');
 
-        //Creating and resizing the screenshot according to the "cache enabled" value, and what's in the cache
+        $renderedScreenshotName = $this->getFileName($url, $format);
+        $resizedScreenshotName  = sprintf("%sx%s%s", $width, $height, $renderedScreenshotName);
+        
+        // Creating and resizing the screenshot according to the "cache enabled" value, and what's in the cache
         if($conf['cache']['enabled']) {
 
-            $renderedScreenshotName = $this->getFileName($url, $format);
             $renderedScreenshotAbsolutePath = sprintf("%s%s", $this->getAbsoluteCacheDirectory(), $renderedScreenshotName);
-            $resizedScreenshotName  = sprintf("%sx%s%s", $width, $height, $renderedScreenshotName);
             $resizedScreenshotAbsolutePath  = sprintf("%s%s", $this->getAbsoluteCacheDirectory(), $resizedScreenshotName);
-            $resizedScreenshotPath  = sprintf("%s%s", $this->getCacheDirectory(), $resizedScreenshotName);
 
             if($cachedResizedScreenshotName = $this->getImageFromCache($resizedScreenshotName)) {
                 return $this->getImage($resizedScreenshotName, $mode, $format);
@@ -173,7 +173,7 @@ class Manager
             }
         }
 
-        //Generating the screenshot
+        // Generating the screenshot
         $command = sprintf("%s %s/../Lib/imageRender.js %s %s %s",
                 $conf['phantomjs_bin_path'],
                 __DIR__,
@@ -181,14 +181,14 @@ class Manager
                 $format,
                 $this->getAbsoluteCacheDirectory()
         );
-        $renderedScreenshotAbsolutePath = sprintf("%s", shell_exec($command));
+        $renderedScreenshotAbsolutePath = trim(shell_exec($command));
         $this->cacheImage($renderedScreenshotName, $conf['cache']['delay']);
 
-        //Resizing the screenshot
+        // Resizing the screenshot
         $this->resizeScreenShot($renderedScreenshotAbsolutePath, $resizedScreenshotAbsolutePath, $width, $height, $format);
         $this->cacheImage($resizedScreenshotName, $conf['cache']['delay']);
         
-        return $this->getImage($renderedScreenshotName, $mode, $format);
+        return $this->getImage($resizedScreenshotName, $mode, $format);
     }
 
     /**
