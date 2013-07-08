@@ -45,15 +45,28 @@ EOT
                 InputArgument::OPTIONAL,
                 'Is this a file or a base64 encoded string?'
             )
+            ->addArgument(
+                'format',
+                InputArgument::OPTIONAL,
+                'What is the format of the image (png, jpg, gif)?'
+            )
         ;
     }
     
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $output->writeln(sprintf("\n%s\n%s\n%s",
+                                 "<bg=blue>                                        ",
+                                 " Welcome to the idci screenshot creator ",
+                                 "                                        </bg=blue>\n"
+                        )
+        );
+
         $url = $input->getArgument('url');
         $width = $input->getArgument('width');
         $height = $input->getArgument('height');
         $mode = $input->getArgument('mode');
+        $format = $input->getArgument('format');
         $params = array();
 
         if($width) {
@@ -62,13 +75,55 @@ EOT
         if($height) {
             $params['height'] = $height;
         }
-        
         if($mode) {
             $params['mode'] = $mode;
         }
+        if($format) {
+            $params['format'] = $format;
+        }
+        
+        $paramsNumber = count($params);
+        if ($paramsNumber != 4 && $paramsNumber != 0) {
+            $output->writeln("<error>You must indicate at least 4 parameters (width, height, mode and format). If none indicated, default ones can be set.</error>");
+        } elseif ($paramsNumber == 4) {
+            $screenshot = $this->getContainer()->get('idci_web_page_screen_shot.manager')->createScreenshot($url, $params);
+            $output->writeln(sprintf("<info>%s have been created</info>",$screenshot));
+        } else {
+            $output->writeln(array(
+                'This command generate a website screenshot.',
+                '',
+                'In addition to the website url, you must indicate several options :',
+                '<comment>width</comment>, <comment>height</comment>, <comment>mode</comment>, and <comment>format</comment>.',
+                ''
+            ));
 
-        $screenshot = $this->getContainer()->get('idci_web_page_screen_shot.manager')->createScreenshot($url, $params);
+            $dialog = $this->getHelperSet()->get('dialog');
+            $this->askParams($dialog, $params, $output);
+            $screenshot = $this->getContainer()->get('idci_web_page_screen_shot.manager')->createScreenshot($url, $params);
+            $output->writeln(sprintf("<info>%s have been created</info>",$screenshot));
+        }
+    }
 
-        $output->writeln(sprintf("%s have been created",$screenshot));
+    public function askParams($dialog, $params, $output) {
+        $params['width'] = $dialog->ask(
+            $output,
+            '<info>Image width</info> [<comment>160</comment>] : ',
+            '160'
+        );
+        $params['height'] = $dialog->ask(
+            $output,
+            '<info>Image height</info> [<comment>144</comment>] : ',
+            '144'
+        );
+        $params['mode'] = $dialog->ask(
+            $output,
+            '<info>Image mode (base64, file)</info> [<comment>file</comment>] : ',
+            'file'
+        );
+        $params['format'] = $dialog->ask(
+            $output,
+            '<info>Image format (png, jg, gif)</info> [<comment>png</comment>] : ',
+            'png'
+        );
     }
 }

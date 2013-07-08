@@ -8,7 +8,7 @@ Installation
 
 To install this bundle please follow the next steps:
 
-## Step 1: Download the WebPageScreenShotBundle
+### Step 1: Download the WebPageScreenShotBundle
 
 First add the dependency in your `composer.json` file:
 
@@ -26,7 +26,7 @@ Then install the bundles with the command:
 php composer.phar update
 ```
 
-## Step 2: Enable the bundle
+### Step 2: Enable the bundle
 
 Register the bundles in your `app/AppKernel.php`:
 
@@ -44,7 +44,7 @@ public function registerBundles()
 }
 ```
 
-## Step 3: Install phantomjs
+### Step 3: Install phantomjs
 
 This bundle uses [phantomjs](http://phantomjs.org/ "phantomjs") to generate website screenshots. You can install it on linux via `apt-get`.
 
@@ -54,7 +54,7 @@ sudo apt-get install phantomjs
 
 Now the Bundle is installed.
 
-## Step 3: Configure the bundles and set up the directories
+### Step 4: Configure the bundles and set up the directories
 
 You must specify the default configuration in `app/config/config.yml`:
 
@@ -79,15 +79,15 @@ You may find it with the command
 whereis phantomjs
 ```
 
-  * render parameters are used to output a screenshot. Two modes are available : **file** and **base64**. formats include **png**, **jpg** and **gif**.
-  * cache parameters specify whether or not you want to put images in cache. The delay parameter refers to the TTL (time to live) of images.
+  * render parameters are used to output a screenshot. You can specify a **width**, a **height**, a render **mode** and a render **format**. Two modes are available : **file** and **base64**. Formats include **png**, **jpg** and **gif**.
+  * **enabled** cache parameters specify whether or not you want to put images in cache. The **delay** parameter refers to the TTL (time to live) of images.
 
 Usage
 =====
 
-## Generating a screenshot with a command
+### Generating a screenshot with a command
 
-## Generating screenshots in controllers
+### Generating screenshots in controllers
 
 TODO
 
