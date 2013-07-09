@@ -263,14 +263,14 @@ class Manager
      */
     public function getFileName($url, $format)
     {
-        //TODO check parse_url() function
-        if (strpos($url, "http://www.") === 0) {
-            $fileName = sprintf("%s.%s", substr($url, 11), $format);
+        $urlArray = parse_url($url);
+        if(isset($urlArray['path'])) {
+            $fileName = str_replace("/",".", sprintf("%s%s.%s", $urlArray['host'], $urlArray['path'], $format));
         } else {
-            $fileName = sprintf("%s.%s", substr($url, 7), $format);
+            $fileName = sprintf("%s.%s", $urlArray['host'], $format);
         }
 
-        return str_replace(array("/", "?", "="),".", $fileName);
+        return $fileName;
     }
 
     /**
