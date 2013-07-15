@@ -85,7 +85,7 @@ parameters:
     screenshot_cache_delay: 26000
 ```
 
-  * screenshot_phantomjs_bin_path refers to the phantomjs executable path.
+screenshot_phantomjs_bin_path refers to the phantomjs executable path.
 
 You may find it with the command
 
@@ -93,13 +93,13 @@ You may find it with the command
 whereis phantomjs
 ```
 
-  Then, You can specify a **width**, a **height**, a render **mode** and a render **format**. Two modes are available : **file** and **base64**. Formats include **png**, **jpg** and **gif**.
-  * **enabled** cache parameter specify whether or not you want to put images in cache. The **delay** parameter refers to the TTL (time to live) of images.
+Then, You can specify a **width**, a **height**, a render **mode** and a render **format**. Two modes are available : **file** and **base64**. Formats include **png**, **jpg** and **gif**.
+**enabled** cache parameter specify whether or not you want to put images in cache. The **delay** parameter refers to the TTL (time to live) of images.
 
 Usage
 =====
 
-You can create screenshots in 2 ways. In both cases, screenshots will be stored in /web/screenshots_cache.
+You can create screenshots in 2 ways. In both cases, screenshots will be stored in the /web/screenshots_cache directory
 
 ### Create a screenshot with a command
 
@@ -113,9 +113,7 @@ For instance, a working command would give :
 php app/console idci:create:screenshot http://symfony.com 800 600 file jpg
 ```
 
-In case you chose base64 render mode, the base64 encoded string is output on the console.
-
-If you don't indicate any parameters except the url, a prompt will suggest default configuration values (those in your parameters.yml file). You can press enter to accept them, or change them if you wish.
+In case you chose **base64** render mode, the base64 encoded string is output on the console. If you don't indicate any parameters except the url, a prompt will suggest default configuration values (those in your parameters.yml file). You can press enter to accept them, or change them if you wish.
 
 ### Using the service in controllers
 
@@ -128,18 +126,20 @@ But you might want to do something else.
 The Screenshot Manager is accessible via a service called idci_web_page_screen_shot.manager. So you can do in your controllers:
 
 ```php
-  $screenshot = $this->get('idci_web_page_screen_shot.manager')->createScreenshot($url, $params);
+$screenshot = $this->get('idci_web_page_screen_shot.manager')->createScreenshot($url, $params);
 ```
 
-$params is an array containing parameters to overload values in parameters.yml. In the existing controller, it's build with the parameters of the request.
-It should look like something like that:
+The **createScreenshot** function return either the relative path of the image from the web directory, or a base64 encoded string.
+
+**$params** is an array containing parameters to overload values in parameters.yml. In the existing controller, it's build with the parameters of the request.
+Whatever you do, it should look like something like that:
 
 ```php
-  $params = array(
-      "mode" => "base64",
-      "width" => 1024,
-      "file" => "gif"
-  );
+$params = array(
+    "mode" => "base64",
+    "width" => 1024,
+    "file" => "gif"
+);
 ```
 
 
