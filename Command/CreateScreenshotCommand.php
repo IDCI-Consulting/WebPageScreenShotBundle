@@ -6,6 +6,7 @@ use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Helper\DialogHelper;
 
 /**
  * Generate a screenshot
@@ -55,9 +56,36 @@ EOT
     
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $output->writeln("\n<bg=blue>Welcome to the idci screenshot creator</bg=blue>\n");
-
         $url = $input->getArgument('url');
+        $params = $this->getParams($input);
+
+        $paramsNumber = count($params);
+        if ($paramsNumber != 4 && $paramsNumber != 0) {
+            $output->write("<error>You must indicate at least 4 parameters (width, height, mode and format).</error>");
+            $output->writeln("<error>If none indicated, default ones can be set.</error>");
+        } elseif ($paramsNumber == 4) {
+            $screenshot = $this->getContainer()->get('idci_web_page_screen_shot.manager')->createScreenshot($url, $params);
+            $output->writeln(sprintf("<info>%s have been created</info>",$screenshot));
+        } else {
+            $output->writeln(array(
+                'This command generate a website screenshot.',
+                'In addition to the website url, you must indicate several options :',
+                ' - <comment>width</comment>',
+                ' - <comment>height</comment>',
+                ' - <comment>mode</comment>',
+                ' - <comment>format</comment>',
+                ''
+            ));
+
+            $dialog = $this->getHelperSet()->get('dialog');
+            $params = $this->askParams($dialog, $output);
+            $screenshot = $this->getContainer()->get('idci_web_page_screen_shot.manager')->createScreenshot($url, $params);
+            $output->writeln(sprintf("\n<info>%s has been created</info>\n",$screenshot));
+        }
+    }
+
+    public function getParams(InputInterface $input)
+    {
         $width = $input->getArgument('width');
         $height = $input->getArgument('height');
         $mode = $input->getArgument('mode');
@@ -76,53 +104,40 @@ EOT
         if($format) {
             $params['format'] = $format;
         }
-        
-        $paramsNumber = count($params);
-        if ($paramsNumber != 4 && $paramsNumber != 0) {
-            $output->write("<error>You must indicate at least 4 parameters (width, height, mode and format).</error>");
-            $output->writeln("<error>If none indicated, default ones can be set.</error>");
-        } elseif ($paramsNumber == 4) {
-            $screenshot = $this->getContainer()->get('idci_web_page_screen_shot.manager')->createScreenshot($url, $params);
-            $output->writeln(sprintf("<info>%s have been created</info>",$screenshot));
-        } else {
-            $output->writeln(array(
-                'This command generate a website screenshot.',
-                '',
-                'In addition to the website url, you must indicate several options :',
-                ' - <comment>width</comment>',
-                ' - <comment>height</comment>',
-                ' - <comment>mode</comment>',
-                ' - <comment>format</comment>',
-                ''
-            ));
 
-            $dialog = $this->getHelperSet()->get('dialog');
-            $params = $this->askParams($dialog, $output);
-            $screenshot = $this->getContainer()->get('idci_web_page_screen_shot.manager')->createScreenshot($url, $params);
-            $output->writeln(sprintf("\n<info>%s has been created</info>\n",$screenshot));
-        }
+        return $params;
     }
 
-    public function askParams($dialog, $output) {
+    public function askParams(DialogHelper $dialog, OutputInterface $output)
+    {
+        $container = $this->getApplication()->getKernel()->getContainer();
+
+        $defaultWidth = $container->getParameter('screenshot_width');
         $params['width'] = $dialog->ask(
             $output,
-            '<info>Image width</info> [<comment>160</comment>] : ',
-            '160'
+            sprintf('<info>Image width</info> [<comment>%s</comment>] : ', $defaultWidth),
+            $defaultWidth
         );
+
+        $defaultHeight = $container->getParameter('screenshot_height');
         $params['height'] = $dialog->ask(
             $output,
-            '<info>Image height</info> [<comment>144</comment>] : ',
-            '144'
+            sprintf('<info>Image height</info> [<comment>%s</comment>] : ', $defaultHeight),
+            $defaultHeight
         );
+
+        $defaultMode = $container->getParameter('screenshot_mode');
         $params['mode'] = $dialog->ask(
             $output,
-            '<info>Image mode (base64, file)</info> [<comment>file</comment>] : ',
-            'file'
+             sprintf('<info>Image mode (base64, file)</info> [<comment>%s</comment>] : ', $defaultMode),
+            $defaultMode
         );
+
+        $defaultFormat = $container->getParameter('screenshot_format');
         $params['format'] = $dialog->ask(
             $output,
-            '<info>Image format (png, jpg or jpeg, gif)</info> [<comment>png</comment>] : ',
-            'png'
+            sprintf('<info>Image format (png, jpg or jpeg, gif)</info> [<comment>%s</comment>] : ', $defaultFormat),
+            $defaultFormat
         );
         
         return $params;

@@ -1,0 +1,11 @@
+# WebPageScreenShot Configuration
+idci_web_page_screen_shot:
+    phantomjs_bin_path: %screenshot_phantomjs_bin_path%
+    render:
+        width: %screenshot_width%
+        height: %screenshot_height%
+        mode: %screenshot_mode%
+        format: %screenshot_format%
+    cache:
+        enabled: %screenshot_cache_enabled%
+        delay: %screenshot_cache_delay%
