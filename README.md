@@ -82,7 +82,7 @@ parameters:
     screenshot_mode: file
     screenshot_format: png
     screenshot_cache_enabled: true
-    screenshot_cache_delay: 26000
+    screenshot_cache_delay: 86400
 ```
 
 screenshot_phantomjs_bin_path refers to the phantomjs executable path.
@@ -94,7 +94,7 @@ whereis phantomjs
 ```
 
 Then, You can specify a **width**, a **height**, a render **mode** and a render **format**. Two modes are available : **file** and **base64**. Formats include **png**, **jpg** and **gif**.
-**enabled** cache parameter specify whether or not you want to put images in cache. The **delay** parameter refers to the TTL (time to live) of images.
+**enabled** cache parameter specify whether or not you want to put images in cache. The **delay** parameter refers to the TTL (time to live) of images in **seconds**.
 
 Usage
 =====

@@ -32,10 +32,18 @@ class FrontController extends Controller
             $request->query->all(),
             array("url" => $url)
         );
-        
+
         $screenshot = $this->get('idci_web_page_screen_shot.manager')->createScreenshot($url, $params);
-        $response = new Response("<img src =\"".$screenshot."\">");
+
+        if( $callback = $request->query->get("jsoncallback")) {
+            $json = json_encode($screenshot);
+            $response = new Response(sprintf("%s(%s)", $callback, $json));
+        } else {
+            $response = new Response($screenshot);
+        }
+
         $response->headers->set('Content-Type', 'text/html');
+        $response->setStatusCode(200);
 
         return $response;
     }
