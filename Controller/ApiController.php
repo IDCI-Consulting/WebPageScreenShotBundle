@@ -49,8 +49,8 @@ class ApiController extends Controller
             try {
                 //file
                 $image = new \Symfony\Component\HttpFoundation\File\File($screenshot);
-                $img_data = file_get_contents($image);
-                $response = new Response($img_data);
+                $imgData = file_get_contents($image);
+                $response = new Response($imgData);
                 $response->headers->set('Content-Type', $image->getMimeType());
             } catch(\Exception $e) {
                 //base64
