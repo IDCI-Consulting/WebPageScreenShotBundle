@@ -41,13 +41,24 @@ class ApiController extends Controller
         $screenshot = $this->get('idci_web_page_screen_shot.manager')->createScreenshot($url, $params);
 
         if ($callback = $request->query->get("jsoncallback")) {
+            //json
             $json = json_encode($screenshot);
             $response = new Response(sprintf("%s(%s)", $callback, $json));
+            $response->headers->set('Content-Type', 'application/json');
         } else {
-            $response = new Response($screenshot);
+            try {
+                //file
+                $image = new \Symfony\Component\HttpFoundation\File\File($screenshot);
+                $img_data = file_get_contents($image);
+                $response = new Response($img_data);
+                $response->headers->set('Content-Type', $image->getMimeType());
+            } catch(\Exception $e) {
+                //base64
+                $response = new Response($screenshot);
+                $response->headers->set('Content-Type', 'text/html');
+            }
         }
 
-        $response->headers->set('Content-Type', 'text/html');
         $response->setStatusCode(200);
 
         return $response;
