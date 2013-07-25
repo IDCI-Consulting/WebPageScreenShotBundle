@@ -11,6 +11,7 @@ namespace IDCI\Bundle\WebPageScreenShotBundle\Service;
 
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderFormatException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderModeException;
+use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\InvalidCacheDirectoryException;
 use Gregwar\ImageBundle\Services\ImageHandling;
 use Doctrine\Common\Cache\PhpFileCache;
 
@@ -159,8 +160,8 @@ class Manager
         // Creating and resizing the screenshot according to the "cache enabled" value, and what's in the cache
         if($conf['cache']['enabled']) {
 
-            $renderedScreenshotAbsolutePath = sprintf("%s%s", $this->getAbsoluteCacheDirectory(), $renderedScreenshotName);
-            $resizedScreenshotAbsolutePath  = sprintf("%s%s", $this->getAbsoluteCacheDirectory(), $resizedScreenshotName);
+            $renderedScreenshotAbsolutePath = sprintf("%s%s", $this->getCacheDirectory(), $renderedScreenshotName);
+            $resizedScreenshotAbsolutePath  = sprintf("%s%s", $this->getCacheDirectory(), $resizedScreenshotName);
 
             if($cachedResizedScreenshotName = $this->getImageFromCache($resizedScreenshotName)) {
                 return $this->getImage($resizedScreenshotName, $mode, $format);
@@ -179,7 +180,7 @@ class Manager
                 __DIR__,
                 $url,
                 $format,
-                $this->getAbsoluteCacheDirectory()
+                $this->getCacheDirectory()
         );
         $renderedScreenshotAbsolutePath = trim(shell_exec($command));
         $this->cacheImage($renderedScreenshotName, $conf['cache']['delay']);
@@ -201,7 +202,7 @@ class Manager
             $filePath = sprintf("%s%s", $this->getCacheDirectory(), $fileName);
             return $filePath;
         } else {
-            $absoluteFilePath = sprintf("%s%s", $this->getAbsoluteCacheDirectory(), $fileName);
+            $absoluteFilePath = sprintf("%s%s", $this->getCacheDirectory(), $fileName);
             return $this->base64_encode_image($absoluteFilePath, $format);
         }
     }
@@ -317,21 +318,18 @@ class Manager
     }
 
     /**
-     * Get the absolute cache directory path
-     *
-     * @return string : the absolute directory path
-     */
-    public function getAbsoluteCacheDirectory() {
-        return sprintf("%s/../web/screenshots_cache/", $this->getKernel()->getRootDir());
-    }
-
-    /**
      * Get the cache directory path
      *
      * @return string : the directory path
      */
-    public function getCacheDirectory() {
-        return "/screenshots_cache/";
+    public function getCacheDirectory()
+    {
+        $conf = $this->getConfigurationParameters();
+        if (substr($conf['cache']['directory'], -1) != '/') {
+            throw new InvalidCacheDirectoryException();
+        }
+
+        return $conf['cache']['directory'];
     }
 }
 

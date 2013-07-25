@@ -9,3 +9,4 @@ idci_web_page_screen_shot:
     cache:
         enabled: %screenshot_cache_enabled%
         delay: %screenshot_cache_delay%
+        directory: %screenshot_cache_directory%
