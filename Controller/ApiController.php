@@ -16,11 +16,11 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Front controller.
+ * Api controller.
  *
  * @Route("/")
  */
-class FrontController extends Controller
+class ApiController extends Controller
 {
     /**
      * Controller
