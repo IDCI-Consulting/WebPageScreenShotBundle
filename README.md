@@ -69,6 +69,7 @@ Add a controller in your routing.yml file.
 idci_web_page_screen_shot:
     resource: "../../vendor/idci/webpagescreenshot-bundle/IDCI/Bundle/WebPageScreenShotBundle/Controller"
     type:     annotation
+    prefix:   /screenshot
 ```
 
 You must specify some default values in your `parameters.yml` files. Here is an example.

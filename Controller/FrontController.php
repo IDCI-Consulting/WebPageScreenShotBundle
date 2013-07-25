@@ -15,12 +15,17 @@ use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\MissingUrlException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Front controller.
+ *
+ * @Route("/")
+ */
 class FrontController extends Controller
 {
     /**
      * Controller
      *
-     * @Route("/screenshot", name="webpagescreenshot_api")
+     * @Route("/", name="webpagescreenshot_api")
      */
     public function screenAction(Request $request)
     {
