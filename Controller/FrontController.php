@@ -20,7 +20,7 @@ class FrontController extends Controller
     /**
      * Controller
      *
-     * @Route("/screenshot")
+     * @Route("/screenshot", name="webpagescreenshot_api")
      */
     public function screenAction(Request $request)
     {
@@ -35,7 +35,7 @@ class FrontController extends Controller
 
         $screenshot = $this->get('idci_web_page_screen_shot.manager')->createScreenshot($url, $params);
 
-        if( $callback = $request->query->get("jsoncallback")) {
+        if ($callback = $request->query->get("jsoncallback")) {
             $json = json_encode($screenshot);
             $response = new Response(sprintf("%s(%s)", $callback, $json));
         } else {
