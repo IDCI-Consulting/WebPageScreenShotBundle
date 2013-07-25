@@ -42,7 +42,32 @@ class ApiController extends Controller
 
         if ($callback = $request->query->get("jsoncallback")) {
             //json
-            $json = json_encode($screenshot);
+            try {
+                /*return a query like ?url=http://website.com&height=200, of an image already created.
+                  The web service (domain.com/screenshot) url is client side.*/
+                //file
+                $image = new \Symfony\Component\HttpFoundation\File\File($screenshot);
+                $params = array_diff(
+                    $request->query->all(),
+                    array("jsoncallback" => $request->query->get('jsoncallback'))
+                );
+
+                $query = '?';
+                $lenght = count($params);
+                $i = 0;
+                foreach ($params as $key => $value) {
+                    if($i == $lenght - 1) {
+                        $query = sprintf("%s%s=%s", $query, $key, $value);
+                    } else {
+                        $query = sprintf("%s%s=%s&", $query, $key, $value);
+                    }
+                    $i++;
+                }
+                $json = json_encode($query);
+            } catch(\Exception $e) {
+                //base64
+                $json = json_encode($screenshot);
+            }
             $response = new Response(sprintf("%s(%s)", $callback, $json));
             $response->headers->set('Content-Type', 'application/json');
         } else {
