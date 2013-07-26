@@ -16,5 +16,3 @@ class MissingUrlException extends \Exception {
         parent::__construct("Url is missing", 0, null);
     }
 }
-
-?>

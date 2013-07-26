@@ -16,5 +16,3 @@ class UnavailableRenderModeException extends \Exception {
         parent::__construct(sprintf("%s mode isn't available", $mode), 0, null);
     }
 }
-
-?>

@@ -16,5 +16,3 @@ class MissingParameterException extends \Exception {
         parent::__construct(sprintf("Parameter %s is missing", $param), 0, null);
     }
 }
-
-?>

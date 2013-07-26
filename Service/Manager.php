@@ -11,42 +11,32 @@ namespace IDCI\Bundle\WebPageScreenShotBundle\Service;
 
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderFormatException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderModeException;
-use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\InvalidCacheDirectoryException;
+use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderParameterException;
+use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UrlNotValidException;
+use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\MissingParameterException;
+use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\MissingUrlException;
+use IDCI\Bundle\WebPageScreenShotBundle\Renderer\RendererFactory;
 use Gregwar\ImageBundle\Services\ImageHandling;
 use Doctrine\Common\Cache\PhpFileCache;
 
 class Manager
 {
+    public static $AVAILABLE_FORMATS    = array("gif", "png", "jpeg", "jpg");
+    public static $AVAILABLE_MODES      = array("url", "file", "base64");
+    public static $RENDER_PARAMETERS    = array("mode", "format", "width", "height");
+    public static $CACHE_PARAMETERS     = array("enabled", "delay");
+
     protected $configurationParameters;
     protected $givenParameters;
-    protected $imageHandling;
+    protected $imageHandler;
     protected $cache;
-    protected $kernel;
+    protected $screenshotPath;
 
-    public function __construct($configurationParameters, ImageHandling $imageHandling, PhpFileCache $cache, $kernel)
+    public function __construct($configurationParameters, ImageHandling $imageHandler, PhpFileCache $cache)
     {
         $this->setConfigurationParameters($configurationParameters);
-        $this->setImageHandling($imageHandling);
+        $this->setImageHandler($imageHandler);
         $this->setCache($cache);
-        $this->setKernel($kernel);
-    }
-
-    /**
-     * Get the kernel
-     * 
-     * @return Kernel
-     */
-    public function getKernel()
-    {
-        return $this->kernel;
-    }
-
-    /**
-     * Set the kernel
-     */
-    public function setKernel($kernel)
-    {
-        $this->kernel = $kernel;
     }
 
     /**
@@ -62,27 +52,29 @@ class Manager
     /**
      * Set the cache
      */
-    public function setCache($cache)
+    protected function setCache($cache)
     {
         $this->cache = $cache;
     }
 
     /**
-     * Get image handling
+     * Get image handler
      * 
      * @return ImageHandling
      */
-    public function getImageHandling()
+    public function getImageHandler()
     {
-        return $this->imageHandling;
+        return $this->imageHandler;
     }
 
     /**
-     * Set image handling
+     * Set image handler
+     * 
+     * @param ImageHandling $imageHandler
      */
-    public function setImageHandling($image_handling)
+    protected function setImageHandler($imageHandler)
     {
-        $this->imageHandling = $image_handling;
+        $this->imageHandler = $imageHandler;
     }
 
     /**
@@ -98,11 +90,11 @@ class Manager
     /**
      * Set configuration Parameters
      *
-     * @param array
+     * @param array $defaultParameters
      */
-    public function setConfigurationParameters($default_parameters)
+    protected function setConfigurationParameters($defaultParameters)
     {
-        $this->configurationParameters = $default_parameters;
+        $this->configurationParameters = $defaultParameters;
     }
 
     /**
@@ -118,203 +110,267 @@ class Manager
     /**
      * Set given Parameters
      *
-     * @param array
+     * @param array $givenParameters
+     * @throw MissingUrlException
      */
-    public function setGivenParameters($given_parameters)
+    protected function setGivenParameters($givenParameters)
     {
-        $this->givenParameters = $given_parameters;
+        if(!isset($givenParameters['url'])) {
+            throw new MissingUrlException();
+        }
+        $this->givenParameters['url'] = $givenParameters['url'];
+        $this->givenParameters['render'] = array();
+
+        // To prevent hack
+        foreach($givenParameters as $parameter => $value) {
+            if($parameter != 'url' && !in_array($parameter, self::$RENDER_PARAMETERS)) {
+                throw new UnavailableRenderParameterException($parameter);
+            }
+         
+            $check = sprintf('check%s', ucfirst(strtolower($parameter)));
+            $this->givenParameters['render'][$parameter] = self::$check($value);
+        }
     }
 
     /**
-     * Create a screenshot
-     *
-     * @param string: a website url
-     * @param array: parameters about the screenshot to be generated
-     * @return string: the path of the generated screenshot 
-     */
-    public function createScreenshot($url, $given_parameters = array())
-    {
-        // Retrieve and check parameters
-        $this->setGivenParameters($given_parameters);
-        $conf = $this->getConfigurationParameters();
-
-        $availableModes = array("base64", "file");
-        $availableFormats = array("gif", "png", "jpeg", "jpg");
-
-        $mode = $this->getRenderParameter('mode');
-        if (!in_array($mode, $availableModes)) {
-            throw new UnavailableRenderModeException($mode);
-        }
-
-        $format = $this->getRenderParameter('format');
-        if (!in_array($format, $availableFormats)) {
-            throw new UnavailableRenderFormatException($format);
-        }
-
-        $width = $this->getRenderParameter('width');
-        $height = $this->getRenderParameter('height');
-
-        $renderedScreenshotName = $this->getFileName($url, $format);
-        $resizedScreenshotName  = sprintf("%sx%s%s", $width, $height, $renderedScreenshotName);
-        
-        // Creating and resizing the screenshot according to the "cache enabled" value, and what's in the cache
-        if($conf['cache']['enabled']) {
-
-            $renderedScreenshotAbsolutePath = sprintf("%s%s", $this->getCacheDirectory(), $renderedScreenshotName);
-            $resizedScreenshotAbsolutePath  = sprintf("%s%s", $this->getCacheDirectory(), $resizedScreenshotName);
-
-            if($cachedResizedScreenshotName = $this->getImageFromCache($resizedScreenshotName)) {
-                return $this->getImage($resizedScreenshotName, $mode, $format);
-            }
-
-            if($cachedRenderedScreenshotName = $this->getImageFromCache($renderedScreenshotName)) {
-                $this->resizeScreenShot($renderedScreenshotAbsolutePath, $resizedScreenshotAbsolutePath, $width, $height, $format);
-                $this->cacheImage($resizedScreenshotName);
-                return $this->getImage($resizedScreenshotName, $mode, $format);
-            }
-        }
-
-        // Generating the screenshot
-        $command = sprintf("%s %s/../Lib/imageRender.js %s %s %s",
-                $conf['phantomjs_bin_path'],
-                __DIR__,
-                $url,
-                $format,
-                $this->getCacheDirectory()
-        );
-        $renderedScreenshotAbsolutePath = trim(shell_exec($command));
-        $this->cacheImage($renderedScreenshotName, $conf['cache']['delay']);
-
-        // Resizing the screenshot
-        $this->resizeScreenShot($renderedScreenshotAbsolutePath, $resizedScreenshotAbsolutePath, $width, $height, $format);
-        $this->cacheImage($resizedScreenshotName, $conf['cache']['delay']);
-        
-        return $this->getImage($resizedScreenshotName, $mode, $format);
-    }
-
-    /**
-     * Get an image according to the mode
+     * Get screenshot path
      * 
-     * @return string: either the path or a base64string
+     * @return string
      */
-    function getImage($fileName, $mode, $format) {
-        if ($mode == "file") {
-            $filePath = sprintf("%s%s", $this->getCacheDirectory(), $fileName);
-            return $filePath;
-        } else {
-            $absoluteFilePath = sprintf("%s%s", $this->getCacheDirectory(), $fileName);
-            return $this->base64_encode_image($absoluteFilePath, $format);
-        }
+    protected function getScreenshotPath()
+    {
+        return $this->screenshotPath;
     }
-    
+
+    /**
+     * Set screenshot path
+     * 
+     * @param string $path
+     */
+    protected function setScreenshotPath($path)
+    {
+        $this->screenshotPath = $path;
+    }
+
+    /**
+     * Find Parameter
+     *
+     * @param array $haystack
+     * @param array $needle
+     * @return mixed | null 
+     */
+    public static function findParameter($haystack, $needle)
+    {
+        if(count($needle) > 1) {
+            $key = array_shift($needle);
+            if(!isset($haystack[$key])) {
+                return null;
+            }
+            return self::findParameter($haystack[$key], $needle);
+        }
+
+        return isset($haystack[$needle[0]]) ? 
+            $haystack[$needle[0]] : 
+            null
+        ;
+    }
+
+    /**
+     * Get Parameter
+     *
+     * @param mixed $parameterName
+     * @return mixed | null
+     */
+    public function getParameter($parameterPath)
+    {
+        $parameterPath = is_array($parameterPath) ? $parameterPath : array($parameterPath);
+        $value = null;
+
+        if($value = self::findParameter($this->getGivenParameters(), $parameterPath)) {
+            return $value;
+        }
+
+        if($value = self::findParameter($this->getConfigurationParameters(), $parameterPath)) {
+            return $value;
+        }
+
+        throw new MissingParameterException(implode(' > ', $parameterPath));
+    }
+
+    /**
+     * Get a screenshot
+     * 
+     * @param array $givenParameters Parameters about the screenshot to be generated
+     * @return string The path of the generated screenshot 
+     */
+    public function capture($givenParameters = array())
+    {
+        $this->setGivenParameters($givenParameters);
+
+        self::checkFormat($this->getParameter(array('render', 'format')));
+
+        // Check if the cache is enabled and if the image is in cache
+        if ($this->isCacheEnabled()) {
+            $imagePath = $this->getCache()->fetch($this->getImageIdentifier(true));
+        }
+
+        if(!$imagePath) {
+            // Generating the screenshot
+            $this->generateScreenshotImage();
+
+            if($this->isCacheEnabled()) {
+                // Add the captured image in the cache
+                $this->cacheImage($this->getImageIdentifier(true));
+            }
+        }
+        
+        return $this;
+    }
+
+    /**
+     * 
+     */
+    public function render()
+    {
+        return RendererFactory::getRenderer(
+            $this->getParameter(array('render', 'mode')),
+            $imagePath
+        );
+    }
+
+    /**
+     * Generate a screenshot
+     * 
+     * @return imageName
+     */
+    public function generateScreenshotImage($url = null, $output = null)
+    {
+        $url = is_null($url) ? $this->getUrl() : $url;
+        $output = is_null($output) ? $this->getImagePath() : $output;
+
+        // Generating the screenshot using phantomjs
+        $command = sprintf("%s %s/../Lib/imageRender.js %s %s",
+            $this->getParameter("phantomjs_bin_path"),
+            __DIR__,
+            $url,
+            $output
+        );
+
+        // How check if the command works ?
+        $this->setScreenshotPath(trim(shell_exec($command)));
+        
+        return $this->getScreenshotPath();
+    }
+
+    /**
+     * Get the url
+     * 
+     * @return string url
+     */
+    public function getUrl()
+    {
+        return $this->getParameter('url');
+    }
+
+    /**
+     * Is cache enabled
+     * 
+     * @return boolean
+     */
+    public function isCacheEnabled()
+    {
+        return $this->getParameter(array("cache", "enabled"));
+    }
+
+    /**
+     * Get cache ttl
+     * 
+     * @return int
+     */
+    public function getCacheTTL()
+    {
+        return $this->getParameter(array("cache", "delay"));
+    }
+
     /**
      * Encode an image in base64
      * 
      * @return string: the base64-encoded image
      */
-    function base64_encode_image ($file_name, $file_type)
+    public function base64EncodeImage($fileName)
     {
-        if (file_exists($file_name)) {
-            $imgbinary = fread(fopen($file_name, "r"), filesize($file_name));
-            return "data:image/" . $file_type . ";base64," . base64_encode($imgbinary);
+        $pathParts = pathinfo($fileName);
+
+        if (file_exists($fileName)) {
+            $imgbinary = fread(fopen($fileName, "r"), filesize($fileName));
+            return sprintf("data:image/%s;base64,%s", $pathParts['extension'], base64_encode($imgbinary));
         }
     }
-    
+
     /**
      * Resize an image
      *
-     * @param string: the path of the image to be resized
-     * @param string: the path of the resized image
-     * @param integer: the width of the image
-     * @param integer: the height of the image
-     * @param string : the format of the image (png, gif or jpg)
+     * @param string $url the url to generate the name of the image
+     * @param array $params image height, width, format
+     * @param string $imageName the path of the image to be resized
      */
-    public function resizeScreenShot($rendered_screenshot_path, $resized_screenshot_path ,$width, $height, $format)
-    {
-        $this->getImageHandling()
-             ->open($rendered_screenshot_path)
-             ->resize($width, $height)
-             ->save($resized_screenshot_path, $format);
+    public function resizeScreenShotImage($url, $params, $imageName)
+    {   
+        return $this->getImageHandler()
+             ->open(sprintf("%s%s", $this->getCacheDirectory(), $imageName))
+             ->resize($params["width"], $params["height"])
+             ->save(sprintf("%s%s",
+                 $this->getCacheDirectory(), $this->generateImageName($url, $params)),
+                 $params["format"]
+              )
+        ;
     }
 
     /**
-     * Get either a query parameter, or a conf parameter if none given
+     * Generate an identifier for an image
      *
-     * @param string: the name of the parameter to get
-     * @return string: the value of the parameter 
+     * @param boolean $hash
+     * @return string
      */
-    public function getRenderParameter($name)
+    public function getImageIdentifier($hash = false)
     {
-        $params = $this->getGivenParameters();
-        $conf = $this->getConfigurationParameters();
-        if (isset($params[$name])) {
-            return $params[$name];
-        } else if (isset($conf['render'][$name])) {
-            return $conf['render'][$name];
-        } else {
-            throw new \Exception(sprintf("Parameter '%s' is missing", $name));
-        }
-    }
-
-    /**
-     * Get the name of a screenshot according to a given url
-     *
-     * @param string: the url
-     * @return string: the file name
-     */
-    public function getFileName($url, $format)
-    {
-        $urlArray = parse_url($url);
+        $urlArray = parse_url($this->getUrl());
         if(isset($urlArray['path'])) {
-            $fileName = str_replace("/",".", sprintf("%s%s.%s", $urlArray['host'], $urlArray['path'], $format));
+            $imageName = str_replace("/","_", sprintf("%s%s",
+                $urlArray['host'],
+                $urlArray['path']
+            ));
         } else {
-            $fileName = sprintf("%s.%s", $urlArray['host'], $format);
+            $imageName = $urlArray['host'];
         }
 
-        return $fileName;
-    }
-
-    /**
-     * Get hash from image
-     *
-     * @param $image_name string
-     * @return string : md5
-     */
-    public function imageToHash($image_name)
-    {
-        return md5($image_name);
+        $id = sprintf("%s.%s", $imageName, $this->getParameter(array('render', 'format')));
+        
+        return $hash ? md5($id) : $id;
     }
 
     /**
      * Cache an image
      *
-     * @param $image_name string
-     * @param $ttl integer
+     * @param string $cacheId
      */
-    public function cacheImage($image_name)
+    protected function cacheImage($cacheID)
     {
-        $conf = $this->getConfigurationParameters();
-        if($conf['cache']['enabled']) {
-            $cache = $this->getCache();
-            $cache->save(
-                $this->imageToHash($image_name),
-                $image_name,
-                $conf['cache']['delay']
-            );
-        }
+        $this->getCache()->save(
+            $cacheID,
+            $this->getScreenshotPath(),
+            $this->getCacheTTL()
+        );
     }
-
+    
     /**
-     * Get an image from the cache
-     *
-     * @param $image_name string
-     * @return string
+     * Get the image path
+     * 
+     * @return string : the image full path
      */
-    public function getImageFromCache($image_name)
+    protected function getImagePath()
     {
-        $cache = $this->getCache();
-
-        return $cache->fetch($this->imageToHash($image_name));
+        return sprintf('%s/%s', $this->getCacheDirectory(), $this->getImageIdentifier());
     }
 
     /**
@@ -324,13 +380,73 @@ class Manager
      */
     public function getCacheDirectory()
     {
-        $conf = $this->getConfigurationParameters();
-        if (substr($conf['cache']['directory'], -1) != '/') {
-            throw new InvalidCacheDirectoryException();
+        return $this->getParameter(array('cache', 'directory'));
+    }
+    
+    
+    /**
+     * Check the given url
+     * 
+     * @param string $url
+     */
+    public static function checkUrl($url)
+    {
+        if(!filter_var($url, FILTER_VALIDATE_URL, FILTER_FLAG_SCHEME_REQUIRED | FILTER_FLAG_HOST_REQUIRED)) {
+            throw new UrlNotValidException($url);
         }
 
-        return $conf['cache']['directory'];
+        return $url;
+    }
+
+    /**
+     * Check the given format
+     * 
+     * @param string $format
+     * @throws UnavailableRenderFormatException
+     */
+    public static function checkFormat($format)
+    {
+        if (!in_array($format, self::$AVAILABLE_FORMATS)) {
+            throw new UnavailableRenderFormatException($format);
+        }
+
+        return $format;
+    }
+
+    /**
+     * Check the given mode
+     * 
+     * @param string $mode
+     * @throws UnavailableRenderModeException
+     */
+    public static function checkMode($mode)
+    {
+        if (!in_array($mode, self::$AVAILABLE_MODES)) {
+            throw new UnavailableRenderModeException($mode);
+        }
+
+        return $mode;
+    }
+    
+    /**
+     * Check the given width
+     * 
+     * @param int $width
+     */
+    public static function checkWidth($width)
+    {
+        //TODO
+        return $width;
+    }
+    
+    /**
+     * Check the given height
+     * 
+     * @param int $height
+     */
+    public static function checkHeight($height)
+    {
+        //TODO
+        return $height;
     }
 }
-
-?>

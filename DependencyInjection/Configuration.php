@@ -42,7 +42,7 @@ class Configuration implements ConfigurationInterface
                     ->children()
                         ->booleanNode('enabled')->defaultValue('false')->end()
                         ->integerNode('delay')->defaultValue(604800)->end()
-                        ->scalarNode('directory')->defaultValue('/tmp/screenshot/cache/')
+                        ->scalarNode('directory')->defaultValue('/tmp/screenshot/cache/')->end()
                     ->end()
                 ->end()
             ->end()

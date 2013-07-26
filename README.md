@@ -94,7 +94,7 @@ You may find it with the command
 whereis phantomjs
 ```
 
-Then, You can specify a **width**, a **height**, a render **mode** and a render **format**. Two modes are available : **file** and **base64**. Formats include **png**, **jpg** and **gif**.
+Then, You can specify a **width**, a **height**, a render **mode** and a render **format**. Three modes are available : **file**, **url** and **base64**. Formats include **png**, **jpg** and **gif**.
 **enabled** cache parameter specify whether or not you want to put images in cache. The **delay** parameter refers to the TTL (time to live) of images in **seconds**.
 
 Usage

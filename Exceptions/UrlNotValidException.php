@@ -9,10 +9,10 @@
 
 namespace IDCI\Bundle\WebPageScreenShotBundle\Exceptions;
 
-class UnavailableRenderFormatException extends \Exception {
+class UrlNotValidException extends \Exception {
     
-    public function __construct($format)
+    public function __construct($url)
     {
-        parent::__construct(sprintf("%s format isn't available", $format), 0, null);
+        parent::__construct(sprintf("Url %s is not valid", $url), 0, null);
     }
 }
