@@ -17,8 +17,7 @@ use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\WidthNotValidException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\HeightNotValidException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\MissingParameterException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\MissingUrlException;
-use IDCI\Bundle\WebPageScreenShotBundle\Renderer\RendererFactory;
-use IDCI\Bundle\WebPageScreenShotBundle\Renderer\RendererInterface;
+use IDCI\Bundle\WebPageScreenShotBundle\Factory\ScreenshotFactory;
 use Gregwar\ImageBundle\Services\ImageHandling;
 use Doctrine\Common\Cache\PhpFileCache;
 
@@ -28,6 +27,7 @@ class Manager
     public static $AVAILABLE_MODES      = array("url", "file", "base64");
     public static $RENDER_PARAMETERS    = array("mode", "format", "width", "height");
     public static $CACHE_PARAMETERS     = array("enabled", "delay");
+    public static $ALLOWED_PARAMETERS   = array("jsoncallback", "_");
     const MAX_WIDTH = 1400;
     const MAX_HEIGHT = 900;
 
@@ -121,6 +121,10 @@ class Manager
      */
     protected function setGivenParameters($givenParameters)
     {
+        foreach (self::$ALLOWED_PARAMETERS as $key => $value) {
+            unset($givenParameters[$value]);
+        }
+
         if(!isset($givenParameters['url'])) {
             throw new MissingUrlException();
         }
@@ -237,10 +241,11 @@ class Manager
 
         // Check if the cache is enabled and if the image is in cache
         if ($this->isCacheEnabled()) {
-            $imageName = $this->getCache()->fetch($this->getImageIdentifier(true));
+            $imagePath = $this->getCache()->fetch($this->getImageIdentifier(true));
+            $this->setScreenshotPath($imagePath);
         }
 
-        if(!$imageName) {
+        if(!$imagePath) {
             // Generating the screenshot
             $this->generateScreenshotImage();
 
@@ -254,16 +259,49 @@ class Manager
     }
 
     /**
-     * Get renderer
+     * Get resized screenshot
      * 
-     * @return RendererInterface;
+     * @return Screenshot;
      */
-    public function getRenderer()
+    public function getResizedScreenshot()
     {
-        return RendererFactory::getRenderer(
+        if (!$this->getResizedScreenshotPath())
+        {
+            return false;
+        }
+
+        return ScreenshotFactory::getScreenshot(
+            $this->getParameter(array('render', 'mode')),
+            $this->getResizedScreenshotPath()
+        );
+    }
+
+    /**
+     * Get screenshot
+     * 
+     * @return Screenshot;
+     */
+    public function getScreenshot()
+    {
+        if (!$this->getScreenshotPath())
+        {
+            return false;
+        }
+
+        return ScreenshotFactory::getScreenshot(
             $this->getParameter(array('render', 'mode')),
             $this->getScreenshotPath()
         );
+    }
+
+    /**
+     * Renderer
+     * 
+     * @return RendererInterface;
+     */
+    public function render()
+    {
+        return $this->getRenderer()->render();
     }
 
     /**
@@ -318,21 +356,6 @@ class Manager
     public function getCacheTTL()
     {
         return $this->getParameter(array("cache", "delay"));
-    }
-
-    /**
-     * Encode an image in base64
-     * 
-     * @return string: the base64-encoded image
-     */
-    public function base64EncodeImage($fileName)
-    {
-        $pathParts = pathinfo($fileName);
-
-        if (file_exists($fileName)) {
-            $imgbinary = fread(fopen($fileName, "r"), filesize($fileName));
-            return sprintf("data:image/%s;base64,%s", $pathParts['extension'], base64_encode($imgbinary));
-        }
     }
 
     /**

@@ -11,6 +11,7 @@ namespace IDCI\Bundle\WebPageScreenShotBundle\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+use IDCI\Bundle\WebPageScreenShotBundle\Model\Screenshot;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -30,16 +31,17 @@ class ApiController extends Controller
     {
         $screenshotManager = $this->get('idci_web_page_screen_shot.manager');
 
-        $screenshot = $screenshotManager->capture($request->query->all());
-        var_dump($screenshot); die("fin");
+        $screenshot = $screenshotManager->capture($request->query->all())
+                                        ->resizeScreenShot()
+                                        ->getResizedScreenshot();
 
         if ($callback = $request->query->get("jsoncallback")) {
-            $json = json_encode($image);
+            $json = json_encode($screenshot->getContent());
             $response = new Response(sprintf("%s(%s);", $callback, $json));
             $response->headers->set('Content-Type', 'application/json');
         } else {
-            $response = new Response($image);
-            $response->headers->set('Content-Type', $image->getMimeType());
+            $response = new Response($screenshot->getContent());
+            $response->headers->set('Content-Type', $screenshot->getMimeType());
         }
 
         $response->setStatusCode(200);
