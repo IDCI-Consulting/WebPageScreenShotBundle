@@ -36,6 +36,7 @@ class Manager
     protected $imageHandler;
     protected $cache;
     protected $screenshotPath;
+    protected $resizedScreenshotPath;
 
     public function __construct($configurationParameters, ImageHandling $imageHandler, PhpFileCache $cache)
     {
@@ -138,6 +139,26 @@ class Manager
     }
 
     /**
+     * Get resized screenshot path
+     * 
+     * @return string
+     */
+    protected function getResizedScreenshotPath()
+    {
+        return $this->resizedScreenshotPath;
+    }
+
+    /**
+     * Set resized screenshot path
+     * 
+     * @param string $path
+     */
+    protected function setResizedScreenshotPath($path)
+    {
+        $this->resizedScreenshotPath = $path;
+    }
+
+    /**
      * Get screenshot path
      * 
      * @return string
@@ -216,10 +237,10 @@ class Manager
 
         // Check if the cache is enabled and if the image is in cache
         if ($this->isCacheEnabled()) {
-            $imagePath = $this->getCache()->fetch($this->getImageIdentifier(true));
+            $imageName = $this->getCache()->fetch($this->getImageIdentifier(true));
         }
 
-        if(!$imagePath) {
+        if(!$imageName) {
             // Generating the screenshot
             $this->generateScreenshotImage();
 
@@ -229,12 +250,7 @@ class Manager
             }
         }
 
-        return $this->resizeScreenShotImage(
-                $this->getImageIdentifier(false),
-                $this->getParameter(array('render', 'format')),
-                $this->getParameter(array('render', 'width')),
-                $this->getParameter(array('render', 'height'))
-        );
+        return $this;
     }
 
     /**
@@ -268,9 +284,9 @@ class Manager
             $output
         );
 
-        // How check if the command works ?
+        // How to check if the command works ?
         $this->setScreenshotPath(trim(shell_exec($command)));
-        
+
         return $this->getScreenshotPath();
     }
 
@@ -326,17 +342,55 @@ class Manager
      * @param string $format the ouput format
      * @param string $width the ouput width
      * @param string $height the ouput height
+     * 
+     * @return mixed
      */
-    public function resizeScreenShotImage($imageName, $format, $width, $height)
+    public function resizeScreenShot()
     {
-        return $this->getImageHandler()
-             ->open(sprintf("%s%s", $this->getCacheDirectory(), $imageName))
-             ->resize($width, $height)
+        $resizedScreenshotName = sprintf("%sx%s_%s",
+            $this->getParameter(array('render', 'width')),
+            $this->getParameter(array('render', 'height')),
+            $this->getImageIdentifier()
+        );
+
+         $resizedScreenshotPath = sprintf("%s%s",
+            $this->getCacheDirectory(),
+            $resizedScreenshotName
+         );
+        
+        // Check if the resized screenshot exists
+        if (file_exists($resizedScreenshotPath))
+        {
+            $this->setResizedScreenshotPath($resizedScreenshotPath);
+            return $this;
+        }
+        
+        // Check if the cache is enabled and if the row image is in cache
+        if ($this->isCacheEnabled()) {
+            $imagePath = $this->getCache()->fetch($this->getImageIdentifier(true));
+        }
+
+        if (!$imagePath) {
+            return false;
+        } else {
+            //resize the screenshot
+            $this->getImageHandler()
+             ->open(sprintf("%s%s",
+                 $this->getCacheDirectory(),
+                 $this->getImageIdentifier())
+             )
+             ->resize(
+                 $this->getParameter(array('render', 'width')),
+                 $this->getParameter(array('render', 'height'))
+             )
              ->save(sprintf("%s%s",
-                 $this->getCacheDirectory(), "nomDeLImage"),
-                 $format
-              )
-        ;
+                 $this->getCacheDirectory(), $resizedScreenshotName),
+                 $this->getParameter(array('render', 'format'))
+             )
+            ;
+        }
+
+        return $this;
     }
 
     /**
