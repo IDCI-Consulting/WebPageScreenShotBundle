@@ -34,10 +34,7 @@ class ApiController extends Controller
         var_dump($screenshot); die("fin");
 
         if ($callback = $request->query->get("jsoncallback")) {
-            //json
-            
             $json = json_encode($image);
-            
             $response = new Response(sprintf("%s(%s);", $callback, $json));
             $response->headers->set('Content-Type', 'application/json');
         } else {

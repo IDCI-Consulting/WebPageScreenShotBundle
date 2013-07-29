@@ -13,9 +13,12 @@ use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderFormatExcept
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderModeException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderParameterException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UrlNotValidException;
+use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\WidthNotValidException;
+use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\HeightNotValidException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\MissingParameterException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\MissingUrlException;
 use IDCI\Bundle\WebPageScreenShotBundle\Renderer\RendererFactory;
+use IDCI\Bundle\WebPageScreenShotBundle\Renderer\RendererInterface;
 use Gregwar\ImageBundle\Services\ImageHandling;
 use Doctrine\Common\Cache\PhpFileCache;
 
@@ -25,6 +28,8 @@ class Manager
     public static $AVAILABLE_MODES      = array("url", "file", "base64");
     public static $RENDER_PARAMETERS    = array("mode", "format", "width", "height");
     public static $CACHE_PARAMETERS     = array("enabled", "delay");
+    const MAX_WIDTH = 1400;
+    const MAX_HEIGHT = 900;
 
     protected $configurationParameters;
     protected $givenParameters;
@@ -201,7 +206,7 @@ class Manager
      * Get a screenshot
      * 
      * @param array $givenParameters Parameters about the screenshot to be generated
-     * @return string The path of the generated screenshot 
+     * @return IDCI\Bundle\WebPageScreenShotBundle\Service\Manager
      */
     public function capture($givenParameters = array())
     {
@@ -223,18 +228,25 @@ class Manager
                 $this->cacheImage($this->getImageIdentifier(true));
             }
         }
-        
-        return $this;
+
+        return $this->resizeScreenShotImage(
+                $this->getImageIdentifier(false),
+                $this->getParameter(array('render', 'format')),
+                $this->getParameter(array('render', 'width')),
+                $this->getParameter(array('render', 'height'))
+        );
     }
 
     /**
+     * Get renderer
      * 
+     * @return RendererInterface;
      */
-    public function render()
+    public function getRenderer()
     {
         return RendererFactory::getRenderer(
             $this->getParameter(array('render', 'mode')),
-            $imagePath
+            $this->getScreenshotPath()
         );
     }
 
@@ -246,7 +258,7 @@ class Manager
     public function generateScreenshotImage($url = null, $output = null)
     {
         $url = is_null($url) ? $this->getUrl() : $url;
-        $output = is_null($output) ? $this->getImagePath() : $output;
+        $output = is_null($output) ? $this->getOutputPath() : $output;
 
         // Generating the screenshot using phantomjs
         $command = sprintf("%s %s/../Lib/imageRender.js %s %s",
@@ -310,18 +322,19 @@ class Manager
     /**
      * Resize an image
      *
-     * @param string $url the url to generate the name of the image
-     * @param array $params image height, width, format
      * @param string $imageName the path of the image to be resized
+     * @param string $format the ouput format
+     * @param string $width the ouput width
+     * @param string $height the ouput height
      */
-    public function resizeScreenShotImage($url, $params, $imageName)
-    {   
+    public function resizeScreenShotImage($imageName, $format, $width, $height)
+    {
         return $this->getImageHandler()
              ->open(sprintf("%s%s", $this->getCacheDirectory(), $imageName))
-             ->resize($params["width"], $params["height"])
+             ->resize($width, $height)
              ->save(sprintf("%s%s",
-                 $this->getCacheDirectory(), $this->generateImageName($url, $params)),
-                 $params["format"]
+                 $this->getCacheDirectory(), "nomDeLImage"),
+                 $format
               )
         ;
     }
@@ -345,7 +358,7 @@ class Manager
         }
 
         $id = sprintf("%s.%s", $imageName, $this->getParameter(array('render', 'format')));
-        
+
         return $hash ? md5($id) : $id;
     }
 
@@ -364,11 +377,11 @@ class Manager
     }
     
     /**
-     * Get the image path
+     * Get the output path
      * 
-     * @return string : the image full path
+     * @return string : the output full path
      */
-    protected function getImagePath()
+    protected function getOutputPath()
     {
         return sprintf('%s/%s', $this->getCacheDirectory(), $this->getImageIdentifier());
     }
@@ -435,7 +448,14 @@ class Manager
      */
     public static function checkWidth($width)
     {
-        //TODO
+        $min = 0;
+        $max = self::MAX_WIDTH;
+        $min_max = array("options"=> array("min_range"=>$min, "max_range"=>$max));
+
+        if(!filter_var($width, FILTER_VALIDATE_INT, $min_max)) {
+            throw new WidthNotValidException($width, $min, $max);
+        }
+
         return $width;
     }
     
@@ -446,7 +466,13 @@ class Manager
      */
     public static function checkHeight($height)
     {
-        //TODO
+        $min = 0;
+        $max = self::MAX_HEIGHT;
+        $min_max = array("options"=> array("min_range"=>$min, "max_range"=>$max));
+
+        if(!filter_var($height, FILTER_VALIDATE_INT, $min_max)) {
+            throw new HeightNotValidException($height, $min, $max);
+        }
         return $height;
     }
 }
