@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * 
+ * @author:  Baptiste BOUCHEREAU <baptiste.bouchereau@idci-consulting.fr>
+ * @license: GPL
+ *
+ */
+
 namespace IDCI\Bundle\WebPageScreenShotBundle\Command;
 
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
@@ -8,11 +15,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Helper\DialogHelper;
 
-/**
- * Create a screenshot
- *
- * @author baptiste
- */
 class CreateScreenshotCommand extends ContainerAwareCommand {
 
     protected function configure()
@@ -56,7 +58,7 @@ EOT
 
     protected function execute(InputInterface $input, OutputInterface $output)
     { 
-        $params = $this->getParams($input);
+        $params = $this->getInputParams($input);
         $paramsNumber = count($params);
 
         if ($paramsNumber != 5 && $paramsNumber != 0) {
@@ -91,7 +93,13 @@ EOT
         }
     }
 
-    public function getParams(InputInterface $input)
+    /**
+     * Get parameters from the input
+     * 
+     * @param \Symfony\Component\Console\Input\InputInterface $input
+     * @return $params the given parameters
+     */
+    public function getInputParams(InputInterface $input)
     {
         $url = $input->getArgument('url');
         $params['url'] = $url;
@@ -117,6 +125,14 @@ EOT
         return $params;
     }
 
+    /**
+     * Ask user form parameters if none given (except the url which is required)
+     * 
+     * @param \Symfony\Component\Console\Helper\DialogHelper $dialog
+     * @param \Symfony\Component\Console\Output\OutputInterface $output
+     * @param type $params
+     * @return $params the parameters array
+     */
     public function askParams(DialogHelper $dialog, OutputInterface $output, $params)
     {
         $container = $this->getApplication()->getKernel()->getContainer();

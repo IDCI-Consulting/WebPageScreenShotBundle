@@ -114,31 +114,6 @@ class Manager
     }
 
     /**
-     * Set given Parameters
-     *
-     * @param array $givenParameters
-     * @throw MissingUrlException
-     */
-    protected function setGivenParameters($givenParameters)
-    {
-        if(!isset($givenParameters['url'])) {
-            throw new MissingUrlException();
-        }
-        $this->givenParameters['url'] = $givenParameters['url'];
-        $this->givenParameters['render'] = array();
-
-        // To prevent hack
-        foreach($givenParameters as $parameter => $value) {
-            if($parameter != 'url' && !in_array($parameter, self::$RENDER_PARAMETERS)) {
-                throw new UnavailableRenderParameterException($parameter);
-            }
-         
-            $check = sprintf('check%s', ucfirst(strtolower($parameter)));
-            $this->givenParameters['render'][$parameter] = self::$check($value);
-        }
-    }
-
-    /**
      * Get resized screenshot path
      * 
      * @return string
@@ -176,6 +151,31 @@ class Manager
     protected function setScreenshotPath($path)
     {
         $this->screenshotPath = $path;
+    }
+
+    /**
+     * Set given Parameters
+     *
+     * @param array $givenParameters
+     * @throw MissingUrlException
+     */
+    protected function setGivenParameters($givenParameters)
+    {
+        if(!isset($givenParameters['url'])) {
+            throw new MissingUrlException();
+        }
+        $this->givenParameters['url'] = $givenParameters['url'];
+        $this->givenParameters['render'] = array();
+
+        // To prevent hack
+        foreach($givenParameters as $parameter => $value) {
+            if($parameter != 'url' && !in_array($parameter, self::$RENDER_PARAMETERS)) {
+                throw new UnavailableRenderParameterException($parameter);
+            }
+         
+            $check = sprintf('check%s', ucfirst(strtolower($parameter)));
+            $this->givenParameters['render'][$parameter] = self::$check($value);
+        }
     }
 
     /**
@@ -466,8 +466,7 @@ class Manager
     {
         return $this->getParameter(array('cache', 'directory'));
     }
-    
-    
+
     /**
      * Check the given url
      * 
@@ -511,7 +510,7 @@ class Manager
 
         return $mode;
     }
-    
+
     /**
      * Check the given $jsoncallback
      * 
@@ -561,7 +560,7 @@ class Manager
 
         return $width;
     }
-    
+
     /**
      * Check the given height
      * 
