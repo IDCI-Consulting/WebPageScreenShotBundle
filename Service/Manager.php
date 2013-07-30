@@ -382,7 +382,7 @@ class Manager
                  $this->getParameter(array('render', 'format'))
              )
             ;
-            //$this->setResizedScreenshotPath($resizedImagePath);
+            $this->setResizedScreenshotPath($resizedImagePath);
         }
 
         return $this;
