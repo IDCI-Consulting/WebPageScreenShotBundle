@@ -11,6 +11,11 @@ abstract class Screenshot
     protected $content;
     protected $mimeType;
 
+    public function __toString()
+    {
+        return $this->getContent();
+    }
+
     /**
      * Get the screenshot content
      * 

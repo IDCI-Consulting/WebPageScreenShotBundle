@@ -10,6 +10,17 @@ class UrlScreenshot extends Screenshot
 {
     protected $query;
 
+    public function __construct($screenshotPath)
+    {
+        $this->setMimeType("text/plain")
+             ->setQuery($this->getQueryFromPath($screenshotPath));
+    }
+
+    public function __toString()
+    {
+        return $this->getQuery();
+    }
+
     /**
      * Get the screenshot query
      * 
@@ -30,12 +41,6 @@ class UrlScreenshot extends Screenshot
         $this->query = $query;
 
         return $this;
-    }
-
-    public function __construct($screenshotPath)
-    {
-        $this->setMimeType("text/plain")
-             ->setQuery($this->getQueryFromPath($screenshotPath));
     }
 
     /**

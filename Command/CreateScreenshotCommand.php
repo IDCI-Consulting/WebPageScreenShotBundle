@@ -9,12 +9,12 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Helper\DialogHelper;
 
 /**
- * Generate a screenshot
+ * Create a screenshot
  *
  * @author baptiste
  */
 class CreateScreenshotCommand extends ContainerAwareCommand {
-    
+
     protected function configure()
     {
         $this
@@ -53,19 +53,22 @@ EOT
             )
         ;
     }
-    
-    protected function execute(InputInterface $input, OutputInterface $output)
-    {
-        $url = $input->getArgument('url');
-        $params = $this->getParams($input);
 
+    protected function execute(InputInterface $input, OutputInterface $output)
+    { 
+        $params = $this->getParams($input);
         $paramsNumber = count($params);
-        if ($paramsNumber != 4 && $paramsNumber != 0) {
-            $output->write("<error>You must indicate at least 4 parameters (width, height, mode and format).</error>");
+
+        if ($paramsNumber != 5 && $paramsNumber != 0) {
+            $output->write("<error>You must indicate at least 5 parameters (width, height, mode and format).</error>");
             $output->writeln("<error>If none indicated, default ones can be set.</error>");
-        } elseif ($paramsNumber == 4) {
-            $screenshot = $this->getContainer()->get('idci_web_page_screen_shot.manager')->createScreenshot($url, $params);
-            $output->writeln(sprintf("<info>%s have been created</info>",$screenshot));
+        } elseif ($paramsNumber == 5) {
+            $screenshot = $this->getContainer()
+                               ->get('idci_web_page_screen_shot.manager')
+                               ->capture($params)
+                               ->resizeScreenShot()
+                               ->getResizedScreenshot();
+            $output->writeln(sprintf("<info>%s have been created</info>", $screenshot));
         } else {
             $output->writeln(array(
                 'This command generate a website screenshot.',
@@ -78,19 +81,25 @@ EOT
             ));
 
             $dialog = $this->getHelperSet()->get('dialog');
-            $params = $this->askParams($dialog, $output);
-            $screenshot = $this->getContainer()->get('idci_web_page_screen_shot.manager')->createScreenshot($url, $params);
-            $output->writeln(sprintf("\n<info>%s has been created</info>\n",$screenshot));
+            $params = $this->askParams($dialog, $output, $params);
+            $screenshot = $this->getContainer()
+                               ->get('idci_web_page_screen_shot.manager')
+                               ->capture($params)
+                               ->resizeScreenShot()
+                               ->getResizedScreenshot();
+            $output->writeln(sprintf("\n<info>%s</info> has been created\n", $screenshot));
         }
     }
 
     public function getParams(InputInterface $input)
     {
+        $url = $input->getArgument('url');
+        $params['url'] = $url;
+
         $width = $input->getArgument('width');
         $height = $input->getArgument('height');
         $mode = $input->getArgument('mode');
         $format = $input->getArgument('format');
-        $params = array();
 
         if($width) {
             $params['width'] = $width;
@@ -108,7 +117,7 @@ EOT
         return $params;
     }
 
-    public function askParams(DialogHelper $dialog, OutputInterface $output)
+    public function askParams(DialogHelper $dialog, OutputInterface $output, $params)
     {
         $container = $this->getApplication()->getKernel()->getContainer();
 
@@ -139,7 +148,7 @@ EOT
             sprintf('<info>Image format (png, jpg or jpeg, gif)</info> [<comment>%s</comment>] : ', $defaultFormat),
             $defaultFormat
         );
-        
+
         return $params;
     }
 }
