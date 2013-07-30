@@ -68,7 +68,7 @@ EOT
             $screenshot = $this->getContainer()
                                ->get('idci_web_page_screen_shot.manager')
                                ->capture($params)
-                               ->resizeScreenShot()
+                               ->resizeImage()
                                ->getResizedScreenshot();
             $output->writeln(sprintf("<info>%s have been created</info>", $screenshot));
         } else {
@@ -87,7 +87,7 @@ EOT
             $screenshot = $this->getContainer()
                                ->get('idci_web_page_screen_shot.manager')
                                ->capture($params)
-                               ->resizeScreenShot()
+                               ->resizeImage()
                                ->getResizedScreenshot();
             $output->writeln(sprintf("\n<info>%s</info> has been created\n", $screenshot));
         }

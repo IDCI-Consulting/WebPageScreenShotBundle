@@ -12,6 +12,7 @@ namespace IDCI\Bundle\WebPageScreenShotBundle\Service;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderFormatException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderModeException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderParameterException;
+use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\FileNotFoundException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UrlNotValidException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\WidthNotValidException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\HeightNotValidException;
@@ -243,7 +244,7 @@ class Manager
 
         if(!$imagePath) {
             // Generating the screenshot
-            $this->generateScreenshotImage();
+            $this->generateScreenshot();
 
             if($this->isCacheEnabled()) {
                 // Add the captured image in the cache
@@ -262,7 +263,12 @@ class Manager
     public function getResizedScreenshot()
     {
         if (!$this->getResizedScreenshotPath()) {
-            return false;
+            throw new FileNotFoundException(
+                sprintf("%s%s",
+                        $this->getCacheDirectory(),
+                        $this->getResizedImageName()
+                )
+            );
         }
 
         return ScreenshotFactory::getScreenshot(
@@ -279,7 +285,12 @@ class Manager
     public function getScreenshot()
     {
         if (!$this->getScreenshotPath()) {
-            return false;
+            throw new FileNotFoundException(
+                sprintf("%s%s",
+                        $this->getCacheDirectory(),
+                        $this->getImageIdentifier()
+                )
+            );
         }
 
         return ScreenshotFactory::getScreenshot(
@@ -303,7 +314,7 @@ class Manager
      * 
      * @return imageName
      */
-    public function generateScreenshotImage($url = null, $output = null)
+    public function generateScreenshot($url = null, $output = null)
     {
         $url = is_null($url) ? $this->getUrl() : $url;
         $output = is_null($output) ? $this->getOutputPath() : $output;
@@ -320,6 +331,61 @@ class Manager
         $this->setScreenshotPath(trim(shell_exec($command)));
 
         return $this->getScreenshotPath();
+    }
+
+    /**
+     * Resize an image
+     * 
+     * @param string $imageName the path of the image to be resized
+     * @param string $format the ouput format
+     * @param string $width the ouput width
+     * @param string $height the ouput height
+     * 
+     * @return mixed
+     */
+    public function resizeImage()
+    {
+        $resizedImageName = $this->getResizedImageName();
+
+        $resizedImagePath = sprintf("%s%s",
+           $this->getCacheDirectory(),
+           $resizedImageName
+        );
+
+        // Check if the cache is enabled and if the row image is in cache
+        if ($this->isCacheEnabled()) {
+            $imagePath = $this->getCache()->fetch($this->getImageIdentifier(true));
+        }
+
+        // Check if the resized screenshot exists
+        if ($imagePath && file_exists($resizedImagePath)) {
+            $this->setResizedScreenshotPath($resizedImagePath);
+
+            return $this;
+        }
+
+        if (!$imagePath) {
+            return false;
+        } else {
+            //resize the screenshot
+            $this->getImageHandler()
+             ->open(sprintf("%s%s",
+                 $this->getCacheDirectory(),
+                 $this->getImageIdentifier())
+             )
+             ->resize(
+                 $this->getParameter(array('render', 'width')),
+                 $this->getParameter(array('render', 'height'))
+             )
+             ->save(sprintf("%s%s",
+                 $this->getCacheDirectory(), $resizedImageName),
+                 $this->getParameter(array('render', 'format'))
+             )
+            ;
+            //$this->setResizedScreenshotPath($resizedImagePath);
+        }
+
+        return $this;
     }
 
     /**
@@ -353,65 +419,7 @@ class Manager
     }
 
     /**
-     * Resize an image
-     *
-     * @param string $imageName the path of the image to be resized
-     * @param string $format the ouput format
-     * @param string $width the ouput width
-     * @param string $height the ouput height
-     * 
-     * @return mixed
-     */
-    public function resizeScreenShot()
-    {
-        $resizedScreenshotName = sprintf("%sx%s_%s",
-            $this->getParameter(array('render', 'width')),
-            $this->getParameter(array('render', 'height')),
-            $this->getImageIdentifier()
-        );
-
-        $resizedScreenshotPath = sprintf("%s%s",
-           $this->getCacheDirectory(),
-           $resizedScreenshotName
-        );
-
-        // Check if the resized screenshot exists
-        if (file_exists($resizedScreenshotPath)) {
-            $this->setResizedScreenshotPath($resizedScreenshotPath);
-
-            return $this;
-        }
-
-        // Check if the cache is enabled and if the row image is in cache
-        if ($this->isCacheEnabled()) {
-            $imagePath = $this->getCache()->fetch($this->getImageIdentifier(true));
-        }
-
-        if (!$imagePath) {
-            return false;
-        } else {
-            //resize the screenshot
-            $this->getImageHandler()
-             ->open(sprintf("%s%s",
-                 $this->getCacheDirectory(),
-                 $this->getImageIdentifier())
-             )
-             ->resize(
-                 $this->getParameter(array('render', 'width')),
-                 $this->getParameter(array('render', 'height'))
-             )
-             ->save(sprintf("%s%s",
-                 $this->getCacheDirectory(), $resizedScreenshotName),
-                 $this->getParameter(array('render', 'format'))
-             )
-            ;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Generate an identifier for an image
+     * Get the identifier of an image
      *
      * @param boolean $hash
      * @return string
@@ -431,6 +439,20 @@ class Manager
         $id = sprintf("%s.%s", $imageName, $this->getParameter(array('render', 'format')));
 
         return $hash ? md5($id) : $id;
+    }
+
+    /**
+     * Get the resized name of an image
+     *
+     * @return string
+     */
+    public function getResizedImageName()
+    {
+        return sprintf("%sx%s_%s",
+            $this->getParameter(array('render', 'width')),
+            $this->getParameter(array('render', 'height')),
+            $this->getImageIdentifier()
+        );
     }
 
     /**

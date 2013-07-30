@@ -32,7 +32,7 @@ class ApiController extends Controller
         $screenshotManager = $this->get('idci_web_page_screen_shot.manager');
 
         $screenshot = $screenshotManager->capture($request->query->all())
-                                        ->resizeScreenShot()
+                                        ->resizeImage()
                                         ->getResizedScreenshot();
         
         if ($screenshot instanceof UrlScreenshot) {
@@ -48,7 +48,6 @@ class ApiController extends Controller
             $response = new Response(sprintf("%s(%s);", $callback, $json));
             $response->headers->set('Content-Type', 'application/json');
         } else {
-            
             $response = new Response($screenshot->getContent());
             $response->headers->set('Content-Type', $screenshot->getMimeType());
         }

@@ -13,7 +13,7 @@ class Base64Screenshot extends Screenshot
 {
     public function __construct($screenshotPath)
     {
-        $this->setMimeType("text/html")
+        $this->setMimeType("text/plain")
              ->setContent($this->base64EncodeImage($screenshotPath));
     }
 
