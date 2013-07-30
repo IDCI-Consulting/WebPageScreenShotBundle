@@ -16,6 +16,7 @@ use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UrlNotValidException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\WidthNotValidException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\HeightNotValidException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\MissingParameterException;
+use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\JsonCallbackNotValidException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\MissingUrlException;
 use IDCI\Bundle\WebPageScreenShotBundle\Factory\ScreenshotFactory;
 use Gregwar\ImageBundle\Services\ImageHandling;
@@ -25,9 +26,8 @@ class Manager
 {
     public static $AVAILABLE_FORMATS    = array("gif", "png", "jpeg", "jpg");
     public static $AVAILABLE_MODES      = array("url", "file", "base64");
-    public static $RENDER_PARAMETERS    = array("mode", "format", "width", "height");
+    public static $RENDER_PARAMETERS    = array("mode", "format", "width", "height", "jsoncallback", "_");
     public static $CACHE_PARAMETERS     = array("enabled", "delay");
-    public static $ALLOWED_PARAMETERS   = array("jsoncallback", "_");
     const MAX_WIDTH = 1400;
     const MAX_HEIGHT = 900;
 
@@ -121,10 +121,6 @@ class Manager
      */
     protected function setGivenParameters($givenParameters)
     {
-        foreach (self::$ALLOWED_PARAMETERS as $key => $value) {
-            unset($givenParameters[$value]);
-        }
-
         if(!isset($givenParameters['url'])) {
             throw new MissingUrlException();
         }
@@ -265,8 +261,7 @@ class Manager
      */
     public function getResizedScreenshot()
     {
-        if (!$this->getResizedScreenshotPath())
-        {
+        if (!$this->getResizedScreenshotPath()) {
             return false;
         }
 
@@ -283,8 +278,7 @@ class Manager
      */
     public function getScreenshot()
     {
-        if (!$this->getScreenshotPath())
-        {
+        if (!$this->getScreenshotPath()) {
             return false;
         }
 
@@ -376,18 +370,18 @@ class Manager
             $this->getImageIdentifier()
         );
 
-         $resizedScreenshotPath = sprintf("%s%s",
-            $this->getCacheDirectory(),
-            $resizedScreenshotName
-         );
-        
+        $resizedScreenshotPath = sprintf("%s%s",
+           $this->getCacheDirectory(),
+           $resizedScreenshotName
+        );
+
         // Check if the resized screenshot exists
-        if (file_exists($resizedScreenshotPath))
-        {
+        if (file_exists($resizedScreenshotPath)) {
             $this->setResizedScreenshotPath($resizedScreenshotPath);
+
             return $this;
         }
-        
+
         // Check if the cache is enabled and if the row image is in cache
         if ($this->isCacheEnabled()) {
             $imagePath = $this->getCache()->fetch($this->getImageIdentifier(true));
@@ -519,6 +513,38 @@ class Manager
     }
     
     /**
+     * Check the given $jsoncallback
+     * 
+     * @param int $jsoncallbacks
+     */
+    public static function checkJsoncallback($jsoncallback)
+    {
+        $options = array("options" => array("regexp" => "/jQuery\d+_\d+/"));
+        
+        if(!filter_var($jsoncallback, FILTER_VALIDATE_REGEXP, $options)) {
+            throw new JsonCallbackNotValidException($jsoncallback);
+        }
+
+        return $jsoncallback;
+    }
+
+    /**
+     * Check the given $_
+     * 
+     * @param int $_
+     */
+    public static function check_($_)
+    {
+        $options = array("options" => array("regexp" => "/\d+/"));
+        
+        if(!filter_var($_, FILTER_VALIDATE_REGEXP, $options)) {
+            throw new \Exception(sprintf("%s is not a valid parameter", $_));
+        }
+
+        return $_;
+    }
+
+    /**
      * Check the given width
      * 
      * @param int $width
@@ -550,6 +576,7 @@ class Manager
         if(!filter_var($height, FILTER_VALIDATE_INT, $min_max)) {
             throw new HeightNotValidException($height, $min, $max);
         }
+
         return $height;
     }
 }

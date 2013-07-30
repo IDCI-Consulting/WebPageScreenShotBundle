@@ -8,27 +8,65 @@ namespace IDCI\Bundle\WebPageScreenShotBundle\Model;
 
 class UrlScreenshot extends Screenshot
 {
-    public function __construct($screenshotPath)
+    protected $query;
+
+    /**
+     * Get the screenshot query
+     * 
+     * @return string
+     */
+    public function getQuery()
     {
-        $this->setMimeType("plain/text")
-             ->setContent($this->getUrlFromPath($screenshotPath));
+        return $this->query;
     }
 
-    public function getUrlFromPath($screenshotPath)
+    /**
+     * Set the screenshot query
+     * 
+     * @param string query
+     */
+    public function setQuery($query)
+    {
+        $this->query = $query;
+
+        return $this;
+    }
+
+    public function __construct($screenshotPath)
+    {
+        $this->setMimeType("text/plain")
+             ->setQuery($this->getQueryFromPath($screenshotPath));
+    }
+
+    /**
+     * Get the screenshot query from his path
+     * 
+     * @param screenshot the screenshot path
+     * @return string the query
+     */
+    public function getQueryFromPath($screenshotPath)
     {
         //get the width
         preg_match( '/\/\d+x/', $screenshotPath, $match);
         $width = substr(implode("", $match), 1, -1);
 
         //get the height
-        preg_match( '/\xd+_/', $screenshotPath, $match);
+        preg_match( '/x\d+_/', $screenshotPath, $match);
         $height = substr(implode("", $match), 1, -1);
 
         //get the format
         $pathParts = pathinfo($screenshotPath);
         $format = $pathParts['extension'];
 
-        //TODO?
+        //get the website url
+        preg_match( '/_.+'.$format.'/', $screenshotPath, $match);
+        $websiteString = implode("", $match);
+        $websiteString = substr($websiteString, 1, strrpos($websiteString, '.')-1);
+        $websiteUrl = str_replace("_", "/", $websiteString);
+
+        $query = sprintf("?url=http://%s&width=%s&height=%s&mode=file&format=%s", $websiteUrl, $width, $height, $format);
+
+        return $query;
     }
 }
 

@@ -11,7 +11,7 @@ namespace IDCI\Bundle\WebPageScreenShotBundle\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
-use IDCI\Bundle\WebPageScreenShotBundle\Model\Screenshot;
+use IDCI\Bundle\WebPageScreenShotBundle\Model\UrlScreenshot;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -34,12 +34,21 @@ class ApiController extends Controller
         $screenshot = $screenshotManager->capture($request->query->all())
                                         ->resizeScreenShot()
                                         ->getResizedScreenshot();
-
+        
+        if ($screenshot instanceof UrlScreenshot) {
+            //create the url of the screenshot with the host and the query
+            $screenshot->setContent(sprintf("http://%s/app_dev.php/screenshot%s",
+                $this->getRequest()->getHost(),
+                $screenshot->getQuery()
+            ));
+        }
+ 
         if ($callback = $request->query->get("jsoncallback")) {
             $json = json_encode($screenshot->getContent());
             $response = new Response(sprintf("%s(%s);", $callback, $json));
             $response->headers->set('Content-Type', 'application/json');
         } else {
+            
             $response = new Response($screenshot->getContent());
             $response->headers->set('Content-Type', $screenshot->getMimeType());
         }
