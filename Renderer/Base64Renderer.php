@@ -7,14 +7,13 @@
  *
  */
 
-namespace IDCI\Bundle\WebPageScreenShotBundle\Model;
+namespace IDCI\Bundle\WebPageScreenShotBundle\Renderer;
 
-class Base64Screenshot extends Screenshot
+class Base64Renderer extends AbstractRenderer
 {
-    public function __construct($screenshotPath)
+    public function render()
     {
-        $this->setMimeType("text/plain")
-             ->setContent($this->base64EncodeImage($screenshotPath));
+        
     }
 
     /**
@@ -28,9 +27,8 @@ class Base64Screenshot extends Screenshot
 
         if (file_exists($filePath)) {
             $imgBinary = fread(fopen($filePath, "r"), filesize($filePath));
+
             return sprintf("data:image/%s;base64,%s", $pathParts['extension'], base64_encode($imgBinary));
         }
     }
 }
-
-?>

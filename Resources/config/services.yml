@@ -3,6 +3,24 @@ services:
         class: Doctrine\Common\Cache\PhpFileCache
         arguments: [%kernel.cache_dir%]
 
+    url_generator:
+        class: Symfony\Component\Routing\Generator\UrlGenerator
+
+    idci_web_page_screen_shot.base64_renderer:
+        class: IDCI\Bundle\WebPageScreenShotBundle\Renderer\Base64Renderer
+
+    idci_web_page_screen_shot.file_renderer:
+        class: IDCI\Bundle\WebPageScreenShotBundle\Renderer\FileRenderer
+
+    idci_web_page_screen_shot.url_renderer:
+        class: IDCI\Bundle\WebPageScreenShotBundle\Renderer\UrlRenderer
+        arguments: [@url_generator]
+
     idci_web_page_screen_shot.manager:
         class: IDCI\Bundle\WebPageScreenShotBundle\Service\Manager
         arguments: [%webPageScreenShotConfiguration%, @image.handling, @idci_cache, @kernel]
+        calls:
+            - [getRenderer, [@mode_renderer]]
+            - [getRenderer, [@file_renderer]]
+            - [getRenderer, [@base64_renderer]]
+    

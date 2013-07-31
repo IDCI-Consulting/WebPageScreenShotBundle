@@ -12,14 +12,13 @@ namespace IDCI\Bundle\WebPageScreenShotBundle\Service;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderFormatException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderModeException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderParameterException;
-use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\FileNotFoundException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UrlNotValidException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\WidthNotValidException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\HeightNotValidException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\MissingParameterException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\JsonCallbackNotValidException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\MissingUrlException;
-use IDCI\Bundle\WebPageScreenShotBundle\Factory\ScreenshotFactory;
+use IDCI\Bundle\WebPageScreenShotBundle\Model\AbstractRenderer;
 use Gregwar\ImageBundle\Services\ImageHandling;
 use Doctrine\Common\Cache\PhpFileCache;
 
@@ -31,11 +30,11 @@ class Manager
     public static $CACHE_PARAMETERS     = array("enabled", "delay");
     const MAX_WIDTH = 1400;
     const MAX_HEIGHT = 900;
-
     protected $configurationParameters;
     protected $givenParameters;
     protected $imageHandler;
     protected $cache;
+    protected $renderers;
     protected $screenshotPath;
     protected $resizedScreenshotPath;
 
@@ -155,6 +154,17 @@ class Manager
     }
 
     /**
+     * Add renderer
+     *
+     * @param AbstractRenderer $renderer
+     */
+    public function addRenderer(AbstractRenderer $renderer)
+    {
+        $service = get_class($renderer);
+        $this->notifiers[$service] = $renderer;
+    }
+
+    /**
      * Set given Parameters
      *
      * @param array $givenParameters
@@ -165,6 +175,7 @@ class Manager
         if(!isset($givenParameters['url'])) {
             throw new MissingUrlException();
         }
+
         $this->givenParameters['url'] = $givenParameters['url'];
         $this->givenParameters['render'] = array();
 
@@ -193,10 +204,11 @@ class Manager
             if(!isset($haystack[$key])) {
                 return null;
             }
+
             return self::findParameter($haystack[$key], $needle);
         }
 
-        return isset($haystack[$needle[0]]) ? 
+        return isset($haystack[$needle[0]]) ?
             $haystack[$needle[0]] : 
             null
         ;
@@ -233,7 +245,6 @@ class Manager
     public function capture($givenParameters = array())
     {
         $this->setGivenParameters($givenParameters);
-
         self::checkFormat($this->getParameter(array('render', 'format')));
 
         // Check if the cache is enabled and if the image is in cache
@@ -245,7 +256,6 @@ class Manager
         if(!$imagePath) {
             // Generating the screenshot
             $this->generateScreenshot();
-
             if($this->isCacheEnabled()) {
                 // Add the captured image in the cache
                 $this->cacheImage($this->getImageIdentifier(true));
@@ -256,47 +266,13 @@ class Manager
     }
 
     /**
-     * Get resized screenshot
+     * Get renderer
      * 
-     * @return Screenshot;
+     * @return RendererInterface;
      */
-    public function getResizedScreenshot()
+    public function getRenderer()
     {
-        if (!$this->getResizedScreenshotPath()) {
-            throw new FileNotFoundException(
-                sprintf("%s%s",
-                        $this->getCacheDirectory(),
-                        $this->getResizedImageName()
-                )
-            );
-        }
-
-        return ScreenshotFactory::getScreenshot(
-            $this->getParameter(array('render', 'mode')),
-            $this->getResizedScreenshotPath()
-        );
-    }
-
-    /**
-     * Get screenshot
-     * 
-     * @return Screenshot;
-     */
-    public function getScreenshot()
-    {
-        if (!$this->getScreenshotPath()) {
-            throw new FileNotFoundException(
-                sprintf("%s%s",
-                        $this->getCacheDirectory(),
-                        $this->getImageIdentifier()
-                )
-            );
-        }
-
-        return ScreenshotFactory::getScreenshot(
-            $this->getParameter(array('render', 'mode')),
-            $this->getScreenshotPath()
-        );
+        
     }
 
     /**
@@ -368,19 +344,20 @@ class Manager
             return false;
         } else {
             //resize the screenshot
-            $this->getImageHandler()
-             ->open(sprintf("%s%s",
-                 $this->getCacheDirectory(),
-                 $this->getImageIdentifier())
-             )
-             ->resize(
-                 $this->getParameter(array('render', 'width')),
-                 $this->getParameter(array('render', 'height'))
-             )
-             ->save(sprintf("%s%s",
-                 $this->getCacheDirectory(), $resizedImageName),
-                 $this->getParameter(array('render', 'format'))
-             )
+            $this
+                ->getImageHandler()
+                ->open(sprintf("%s%s",
+                    $this->getCacheDirectory(),
+                    $this->getImageIdentifier())
+                )
+                ->resize(
+                    $this->getParameter(array('render', 'width')),
+                    $this->getParameter(array('render', 'height'))
+                )
+                ->save(sprintf("%s%s",
+                    $this->getCacheDirectory(), $resizedImageName),
+                    $this->getParameter(array('render', 'format'))
+                )
             ;
             $this->setResizedScreenshotPath($resizedImagePath);
         }
