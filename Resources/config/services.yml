@@ -20,7 +20,7 @@ services:
         class: IDCI\Bundle\WebPageScreenShotBundle\Service\Manager
         arguments: [%webPageScreenShotConfiguration%, @image.handling, @idci_cache, @kernel]
         calls:
-            - [getRenderer, [@mode_renderer]]
-            - [getRenderer, [@file_renderer]]
-            - [getRenderer, [@base64_renderer]]
+            - [getRenderer, [@idci_web_page_screen_shot.url_renderer]]
+            - [getRenderer, [@idci_web_page_screen_shot.file_renderer]]
+            - [getRenderer, [@idci_web_page_screen_shot.base64_renderer]]
     
