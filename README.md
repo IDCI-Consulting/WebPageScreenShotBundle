@@ -134,19 +134,16 @@ You might want to do something else. The Screenshot Manager is accessible via a 
 
 ```php
 $renderer = $screenshotManager
-    ->capture($request->query->all())
+    ->capture($params)
     ->resizeImage()
     ->getRenderer()
 ;
 ```
-
 The renderer take care of rendering the screenshot, according to the chosen mode. To retrieve the content of the screenshot, use the render function.
 ```php
 $screenshot = $renderer->render();
 ```
 Depending on the mode, it can be either a url, or a file, or a base64 encoded string.
-
-The **createScreenshot** function return either the relative path of the image from the web directory, or a base64 encoded string.
 
 **$params** is an array containing parameters. In the existing controller, it's build with the parameters of the request.
 Whatever you do, it should look like something like that:
