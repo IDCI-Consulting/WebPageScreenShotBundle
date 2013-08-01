@@ -52,7 +52,7 @@ class UrlRenderer extends AbstractRenderer
         $url = $this
             ->getRouter()
             ->generate(
-                'idci_webpagescreenshot_api_getscreen',
+                'idci_webpagescreenshot_api_getcapture',
                 array('name' => $pathParts['basename']),
                 true
             )

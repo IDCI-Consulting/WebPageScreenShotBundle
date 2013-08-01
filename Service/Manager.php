@@ -17,7 +17,6 @@ use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UrlNotValidException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\WidthNotValidException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\HeightNotValidException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\MissingParameterException;
-use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\JsonCallbackNotValidException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\MissingUrlException;
 use IDCI\Bundle\WebPageScreenShotBundle\Renderer\RendererInterface;
 use Gregwar\ImageBundle\Services\ImageHandling;
@@ -25,12 +24,12 @@ use Doctrine\Common\Cache\PhpFileCache;
 
 class Manager
 {
-    public static $AVAILABLE_FORMATS    = array("gif", "png", "jpeg", "jpg");
-    public static $AVAILABLE_MODES      = array("url", "file", "base64");
-    public static $RENDER_PARAMETERS    = array("mode", "format", "width", "height", "jsoncallback", "_");
-    public static $CACHE_PARAMETERS     = array("enabled", "delay");
     const MAX_WIDTH = 1440;
     const MAX_HEIGHT = 900;
+    public static $AVAILABLE_FORMATS    = array("gif", "png", "jpeg", "jpg");
+    public static $AVAILABLE_MODES      = array("url", "file", "base64");
+    public static $RENDER_PARAMETERS    = array("mode", "format", "width", "height");
+    public static $CACHE_PARAMETERS     = array("enabled", "delay");
     protected $configurationParameters;
     protected $givenParameters;
     protected $imageHandler;
@@ -364,7 +363,7 @@ class Manager
         }
 
         if (!$imagePath) {
-            return false;
+            throw new \Exception("Cannot resize an non existing image"); //TODO create the exception in the exception directory
         } else {
             //resize the screenshot
             $this
@@ -428,7 +427,7 @@ class Manager
     {
         $urlArray = parse_url($this->getUrl());
         if(isset($urlArray['path'])) {
-            $imageName = str_replace("/","_", sprintf("%s%s",
+            $imageName = str_replace("/", "_", sprintf("%s%s",
                 $urlArray['host'],
                 $urlArray['path']
             ));
@@ -436,7 +435,10 @@ class Manager
             $imageName = $urlArray['host'];
         }
 
-        $id = sprintf("%s.%s", $imageName, $this->getParameter(array('render', 'format')));
+        $id = sprintf("%s.%s",
+            $imageName,
+            $this->getParameter(array('render', 'format'))
+        );
 
         return $hash ? md5($id) : $id;
     }
@@ -531,38 +533,6 @@ class Manager
         }
 
         return $mode;
-    }
-
-    /**
-     * Check the given $jsoncallback
-     * 
-     * @param int $jsoncallbacks
-     */
-    public static function checkJsoncallback($jsoncallback)
-    {
-        $options = array("options" => array("regexp" => "/jQuery\d+_\d+/"));
-        
-        if(!filter_var($jsoncallback, FILTER_VALIDATE_REGEXP, $options)) {
-            throw new JsonCallbackNotValidException($jsoncallback);
-        }
-
-        return $jsoncallback;
-    }
-
-    /**
-     * Check the given $_
-     * 
-     * @param int $_
-     */
-    public static function check_($_)
-    {
-        $options = array("options" => array("regexp" => "/\d+/"));
-        
-        if(!filter_var($_, FILTER_VALIDATE_REGEXP, $options)) {
-            throw new \Exception(sprintf("%s is not a valid parameter", $_));
-        }
-
-        return $_;
     }
 
     /**
