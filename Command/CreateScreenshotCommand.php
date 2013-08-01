@@ -22,29 +22,29 @@ class CreateScreenshotCommand extends ContainerAwareCommand
     protected function configure()
     {
         $this
-                ->setName('idci:create:screenshot')
-                ->setDescription('Create (generate and resize) a screenshot from a website')
-                ->setHelp(<<<EOT
-                The <info>%command.name%</info> command create a screenshot from a website url.
-                Do not forget the http:// as part of the url.
-                You may add some options : width, height, mode(base64, file) and format (jpg, png, gif)
+            ->setName('idci:create:screenshot')
+            ->setDescription('Create (generate and resize) a screenshot from a website')
+            ->setHelp(<<<EOT
+            The <info>%command.name%</info> command create a screenshot from a website url.
+            Do not forget the http:// as part of the url.
+            You may add some options : width, height, mode(base64, file) and format (jpg, png, gif)
 EOT
-                )
-                ->addArgument(
-                        'url', InputArgument::REQUIRED, 'Which website do you want a screenshot from?'
-                )
-                ->addArgument(
-                        'width', InputArgument::OPTIONAL, 'What will be the width of the screenshot?'
-                )
-                ->addArgument(
-                        'height', InputArgument::OPTIONAL, 'What will be the height of the screenshot?'
-                )
-                ->addArgument(
-                        'mode', InputArgument::OPTIONAL, 'Is this a file or a base64 encoded string?'
-                )
-                ->addArgument(
-                        'format', InputArgument::OPTIONAL, 'What is the format of the image (png, jpg, gif)?'
-                )
+            )
+            ->addArgument(
+                    'url', InputArgument::REQUIRED, 'Which website do you want a screenshot from?'
+            )
+            ->addArgument(
+                    'width', InputArgument::OPTIONAL, 'What will be the width of the screenshot?'
+            )
+            ->addArgument(
+                    'height', InputArgument::OPTIONAL, 'What will be the height of the screenshot?'
+            )
+            ->addArgument(
+                    'mode', InputArgument::OPTIONAL, 'Is this a file or a base64 encoded string?'
+            )
+            ->addArgument(
+                    'format', InputArgument::OPTIONAL, 'What is the format of the image (png, jpg, gif)?'
+            )
         ;
     }
 
