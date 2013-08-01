@@ -123,12 +123,12 @@ A controller already exists. You might want to check it out [here](https://githu
 
 There are 2 actions availables.
 
-The first one handle a request, and return the generated image as a response.
-The request should look like **http://mysymfonyapp/screenshot/capture?url=http://mywebsite.com&format=jpg&mode=url**
-The url mode is used to retrieve an url matching the second action.
+The first one handle a request, and return the generated image as a response.  
+The request should look like **http://mysymfonyapp/screenshot/capture?url=http://mywebsite.com&format=jpg&mode=url**  
+The url mode is used to retrieve an url matching the second action.    
 
-The second one simply retrieve an already generated screenshot.
-The request should look like **http://mysymfonyapp/screenshot/get/800x600_website.com.png**
+The second one simply retrieve an already generated screenshot.  
+The request should look like **http://mysymfonyapp/screenshot/get/800x600_website.com.png**    
 
 You might want to do something else. The Screenshot Manager is accessible via a service called idci_web_page_screen_shot.manager. So you can do in your controllers:
 
@@ -143,7 +143,6 @@ $renderer = $screenshotManager
 The renderer take care of rendering the screenshot, according to the chosen mode. To retrieve the content of the screenshot, use the render function.
 ```php
 $screenshot = $renderer->render();
-;
 ```
 Depending on the mode, it can be either a url, or a file, or a base64 encoded string.
 
