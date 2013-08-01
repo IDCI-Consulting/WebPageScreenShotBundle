@@ -267,11 +267,13 @@ class Manager
         $parameterPath = is_array($parameterPath) ? $parameterPath : array($parameterPath);
         $value = null;
 
-        if($value = self::findParameter($this->getGivenParameters(), $parameterPath)) {
+        $value = self::findParameter($this->getGivenParameters(), $parameterPath);
+        if(isset($value)) {
             return $value;
         }
 
-        if($value = self::findParameter($this->getConfigurationParameters(), $parameterPath)) {
+        $value = self::findParameter($this->getConfigurationParameters(), $parameterPath);
+        if(isset($value)) {
             return $value;
         }
 
@@ -295,7 +297,7 @@ class Manager
             $this->setScreenshotPath($imagePath);
         }
 
-        if(!$imagePath) {
+        if(!isset($imagePath)) {
             // Generating the screenshot
             $this->generateScreenshot();
             if($this->isCacheEnabled()) {
@@ -353,36 +355,38 @@ class Manager
         // Check if the cache is enabled and if the row image is in cache
         if ($this->isCacheEnabled()) {
             $imagePath = $this->getCache()->fetch($this->getImageIdentifier(true));
+        // Check if the row image exist if the cache is not enabled
+        } else {
+            $imagePath = sprintf("%s%s", $this->getCacheDirectory(), $this->getImageIdentifier());
+            if (!file_exists($imagePath)) {
+                throw new \Exception("Cannot resize %s as it does not exist", $imagePath);
+            }
         }
 
         // Check if the resized screenshot exists
-        if ($imagePath && file_exists($resizedImagePath)) {
+        if (isset($imagePath) && file_exists($resizedImagePath)) {
             $this->setResizedScreenshotPath($resizedImagePath);
 
             return $this;
         }
-
-        if (!$imagePath) {
-            throw new \Exception("Cannot resize an non existing image"); //TODO create the exception in the exception directory
+            
         // Resize the screenshot
-        } else {
-            $this
-                ->getImageHandler()
-                ->open(sprintf("%s%s",
-                    $this->getCacheDirectory(),
-                    $this->getImageIdentifier())
-                )
-                ->resize(
-                    $this->getParameter(array('render', 'width')),
-                    $this->getParameter(array('render', 'height'))
-                )
-                ->save(sprintf("%s%s",
-                    $this->getCacheDirectory(), $resizedImageName),
-                    $this->getParameter(array('render', 'format'))
-                )
-            ;
-            $this->setResizedScreenshotPath($resizedImagePath);
-        }
+        $this
+            ->getImageHandler()
+            ->open(sprintf("%s%s",
+                $this->getCacheDirectory(),
+                $this->getImageIdentifier())
+            )
+            ->resize(
+                $this->getParameter(array('render', 'width')),
+                $this->getParameter(array('render', 'height'))
+            )
+            ->save(sprintf("%s%s",
+                $this->getCacheDirectory(), $resizedImageName),
+                $this->getParameter(array('render', 'format'))
+            )
+        ;
+        $this->setResizedScreenshotPath($resizedImagePath);
 
         return $this;
     }
