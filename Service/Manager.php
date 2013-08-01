@@ -12,13 +12,14 @@ namespace IDCI\Bundle\WebPageScreenShotBundle\Service;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderFormatException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderModeException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UnavailableRenderParameterException;
+use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UndefinedRendererException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\UrlNotValidException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\WidthNotValidException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\HeightNotValidException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\MissingParameterException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\JsonCallbackNotValidException;
 use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\MissingUrlException;
-use IDCI\Bundle\WebPageScreenShotBundle\Model\AbstractRenderer;
+use IDCI\Bundle\WebPageScreenShotBundle\Renderer\RendererInterface;
 use Gregwar\ImageBundle\Services\ImageHandling;
 use Doctrine\Common\Cache\PhpFileCache;
 
@@ -28,7 +29,7 @@ class Manager
     public static $AVAILABLE_MODES      = array("url", "file", "base64");
     public static $RENDER_PARAMETERS    = array("mode", "format", "width", "height", "jsoncallback", "_");
     public static $CACHE_PARAMETERS     = array("enabled", "delay");
-    const MAX_WIDTH = 1400;
+    const MAX_WIDTH = 1440;
     const MAX_HEIGHT = 900;
     protected $configurationParameters;
     protected $givenParameters;
@@ -156,12 +157,54 @@ class Manager
     /**
      * Add renderer
      *
-     * @param AbstractRenderer $renderer
+     * @param RendererInterface $renderer
      */
-    public function addRenderer(AbstractRenderer $renderer)
+    public function addRenderer(RendererInterface $renderer)
     {
-        $service = get_class($renderer);
-        $this->notifiers[$service] = $renderer;
+        $this->renderers[$renderer->getName()] = $renderer;
+    }
+
+    /**
+     * Get notifier
+     *
+     * @param string $notifierServiceName
+     * @return NotifierInterface
+     */
+    public function getNotifier($rendererName)
+    {
+        if (!isset($this->renderers[$rendererName])) {
+            throw new UndefinedRendererException();
+        }
+
+        return $this->notifiers[$rendererName];
+    }
+
+    /**
+     * Get renderer
+     * 
+     * @return RendererInterface;
+     */
+    public function getRenderer()
+    {
+        $rendererName = $this->getParameter(array('render', 'mode'));
+        if (!isset($this->renderers[$rendererName])) {
+            throw new UndefinedRendererException();
+        }
+
+        $renderer = $this->renderers[$rendererName];
+        $renderer->setScreenshotPath($this->getResizedScreenshotPath());
+
+        return $renderer;
+    }
+
+    /**
+     * Renderer
+     * 
+     * @return RendererInterface;
+     */
+    public function render()
+    {
+        return $this->getRenderer()->render();
     }
 
     /**
@@ -263,26 +306,6 @@ class Manager
         }
 
         return $this;
-    }
-
-    /**
-     * Get renderer
-     * 
-     * @return RendererInterface;
-     */
-    public function getRenderer()
-    {
-        
-    }
-
-    /**
-     * Renderer
-     * 
-     * @return RendererInterface;
-     */
-    public function render()
-    {
-        return $this->getRenderer()->render();
     }
 
     /**

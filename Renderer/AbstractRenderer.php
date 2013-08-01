@@ -7,9 +7,40 @@
  *
  */
 
-namespace IDCI\Bundle\WebPageScreenShotBundle\Model;
+namespace IDCI\Bundle\WebPageScreenShotBundle\Renderer;
 
-abstract class AbstractRenderer
+use IDCI\Bundle\WebPageScreenShotBundle\Exceptions\RenderException;
+
+abstract class AbstractRenderer implements RendererInterface
 {
-    abstract function render();
+    protected $screenshotPath;
+
+    /**
+     * Get screenshot path
+     * 
+     * @return string
+     */
+    public function getScreenshotPath()
+    {
+        return $this->screenshotPath;
+    }
+
+    /**
+     * Set screenshot path
+     * 
+     * @param string $path
+     */
+    public function setScreenshotPath($screenshotPath)
+    {
+        $this->screenshotPath = $screenshotPath;
+    }
+
+    abstract function getName();
+
+    function render()
+    {
+        if (!$this->getScreenshotPath()) {
+            throw new RenderException();
+        }
+    }
 }
