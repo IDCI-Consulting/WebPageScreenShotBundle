@@ -15,6 +15,11 @@ class FileRenderer extends AbstractRenderer
 {
     protected $mimeType;
 
+    public function getName()
+    {
+        return "file";
+    }
+
     /**
      * Get mime-type
      * 
@@ -45,8 +50,4 @@ class FileRenderer extends AbstractRenderer
         return $imgData;
     }
 
-    public function getName()
-    {
-        return "file";
-    }
 }

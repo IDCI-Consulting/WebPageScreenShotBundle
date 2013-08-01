@@ -572,12 +572,15 @@ class Manager
      */
     public static function checkWidth($width)
     {
-        $min = 0;
-        $max = self::MAX_WIDTH;
-        $min_max = array("options"=> array("min_range"=>$min, "max_range"=>$max));
+        $minMax = array(
+            "options"=> array(
+                "min_range"=>0,
+                "max_range"=>self::MAX_WIDTH
+            )
+        );
 
-        if(!filter_var($width, FILTER_VALIDATE_INT, $min_max)) {
-            throw new WidthNotValidException($width, $min, $max);
+        if(!filter_var($width, FILTER_VALIDATE_INT, $minMax)) {
+            throw new WidthNotValidException($width, 0, self::MAX_WIDTH);
         }
 
         return $width;
@@ -590,12 +593,15 @@ class Manager
      */
     public static function checkHeight($height)
     {
-        $min = 0;
-        $max = self::MAX_HEIGHT;
-        $min_max = array("options"=> array("min_range"=>$min, "max_range"=>$max));
+        $minMax = array(
+            "options"=> array(
+                "min_range"=>0,
+                "max_range"=>self::MAX_HEIGHT
+            )
+        );
 
-        if(!filter_var($height, FILTER_VALIDATE_INT, $min_max)) {
-            throw new HeightNotValidException($height, $min, $max);
+        if(!filter_var($height, FILTER_VALIDATE_INT, $minMax)) {
+            throw new HeightNotValidException($height, 0, self::MAX_HEIGHT);
         }
 
         return $height;

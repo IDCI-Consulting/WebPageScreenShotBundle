@@ -11,15 +11,16 @@ namespace IDCI\Bundle\WebPageScreenShotBundle\Renderer;
 
 class Base64Renderer extends AbstractRenderer
 {
-    public function render()
-    {
-        parent::render();
-        return $this->base64EncodeImage($this->getScreenshotPath());
-    }
-
     public function getName()
     {
         return "base64";
+    }
+
+    public function render()
+    {
+        parent::render();
+
+        return $this->base64EncodeImage($this->getScreenshotPath());
     }
 
     /**

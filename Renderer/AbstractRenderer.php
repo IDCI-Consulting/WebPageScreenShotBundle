@@ -35,8 +35,6 @@ abstract class AbstractRenderer implements RendererInterface
         $this->screenshotPath = $screenshotPath;
     }
 
-    abstract function getName();
-
     function render()
     {
         if (!$this->getScreenshotPath()) {

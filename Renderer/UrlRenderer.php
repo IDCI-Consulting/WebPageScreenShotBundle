@@ -15,6 +15,11 @@ class UrlRenderer extends AbstractRenderer
 {
     protected $router;
 
+    public function getName()
+    {
+        return "url";
+    }
+
     public function __construct(Router $router)
     {
         $this->setRouter($router);
@@ -54,10 +59,5 @@ class UrlRenderer extends AbstractRenderer
         ;
 
         return $url;
-    }
-
-    public function getName()
-    {
-        return "url";
     }
 }
