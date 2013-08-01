@@ -39,19 +39,19 @@ class ApiController extends Controller
             ->getRenderer()
         ;
 
-        $screenshot = $renderer->render();
-
         if ($renderer instanceof FileRenderer) {
-            $response = new Response($screenshot);
+            $response = new Response($renderer->render());
             $response->headers->set('Content-Type', $renderer->getMimeType());
             $response->setStatusCode(200);
+
             return $response;
         }
 
         if ($renderer instanceof Base64Renderer || $renderer instanceof UrlRenderer) {
-            $response = new Response($screenshot);
+            $response = new Response($renderer->render());
             $response->headers->set('Content-Type', "text/plain");
             $response->setStatusCode(200);
+
             return $response;
         }
     }

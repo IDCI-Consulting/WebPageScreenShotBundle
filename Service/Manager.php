@@ -172,7 +172,7 @@ class Manager
     public function getNotifier($rendererName)
     {
         if (!isset($this->renderers[$rendererName])) {
-            throw new UndefinedRendererException();
+            throw new UndefinedRendererException($rendererName);
         }
 
         return $this->notifiers[$rendererName];
@@ -346,8 +346,8 @@ class Manager
         $resizedImageName = $this->getResizedImageName();
 
         $resizedImagePath = sprintf("%s%s",
-           $this->getCacheDirectory(),
-           $resizedImageName
+            $this->getCacheDirectory(),
+            $resizedImageName
         );
 
         // Check if the cache is enabled and if the row image is in cache
@@ -364,8 +364,8 @@ class Manager
 
         if (!$imagePath) {
             throw new \Exception("Cannot resize an non existing image"); //TODO create the exception in the exception directory
+        // Resize the screenshot
         } else {
-            //resize the screenshot
             $this
                 ->getImageHandler()
                 ->open(sprintf("%s%s",
@@ -543,9 +543,9 @@ class Manager
     public static function checkWidth($width)
     {
         $minMax = array(
-            "options"=> array(
-                "min_range"=>0,
-                "max_range"=>self::MAX_WIDTH
+            "options" => array(
+                "min_range" => 0,
+                "max_range" => self::MAX_WIDTH
             )
         );
 
@@ -564,9 +564,9 @@ class Manager
     public static function checkHeight($height)
     {
         $minMax = array(
-            "options"=> array(
-                "min_range"=>0,
-                "max_range"=>self::MAX_HEIGHT
+            "options" => array(
+                "min_range" => 0,
+                "max_range" => self::MAX_HEIGHT
             )
         );
 
