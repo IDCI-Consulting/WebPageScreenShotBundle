@@ -84,6 +84,7 @@ parameters:
     screenshot_format: png
     screenshot_cache_enabled: true
     screenshot_cache_delay: 86400
+    screenshot_cache_directory:       %kernel.cache_dir%/screenshot/cache/
 ```
 
 screenshot_phantomjs_bin_path refers to the phantomjs executable path.
@@ -95,12 +96,12 @@ whereis phantomjs
 ```
 
 Then, You can specify a **width**, a **height**, a render **mode** and a render **format**. Three modes are available : **file**, **url** and **base64**. Formats include **png**, **jpg** and **gif**.
-**enabled** cache parameter specify whether or not you want to put images in cache. The **delay** parameter refers to the TTL (time to live) of images in **seconds**.
+The **enabled** cache parameter specify whether or not you want to put images in cache. The **delay** parameter refers to the TTL (time to live) of images in **seconds**.
 
 Usage
 =====
 
-You can create screenshots in 2 ways. In both cases, screenshots will be stored in the /web/screenshots_cache directory
+You can create screenshots in 2 ways. In both cases, screenshots will be stored in the directory specified in the parameters.yml file. The maximum resolution of screenshots is 1440*900.
 
 ### Create a screenshot with a command
 
@@ -114,39 +115,50 @@ For instance, a working command would give :
 php app/console idci:create:screenshot http://symfony.com 800 600 file jpg
 ```
 
-In case you chose **base64** render mode, the base64 encoded string is output on the console. If you don't indicate any parameters except the url, a prompt will suggest default configuration values (those in your parameters.yml file). You can press enter to accept them, or change them if you wish.
+If you don't indicate any parameters except the url, a prompt will suggest default configuration values (those in your parameters.yml file). You can press enter to accept them, or change them if you wish.
 
 ### Using the service in controllers
 
-A controller already exists. You might want to check it out [here](https://github.com/IDCI-Consulting/WebPageScreenShotBundle/blob/master/Controller/FrontController.php "front-controller").
+A controller already exists. You might want to check it out [here](https://github.com/IDCI-Consulting/WebPageScreenShotBundle/blob/master/Controller/ApiController.php "api-controller").
 
-This controller handle a request, and return the generated image as a response.
-The request should look like **http://mysymfonyapp/screenshot?url=http://mywebsite.com&format=jpg**
+There are 2 actions availables.
 
-But you might want to do something else.
-The Screenshot Manager is accessible via a service called idci_web_page_screen_shot.manager. So you can do in your controllers:
+The first one handle a request, and return the generated image as a response.
+The request should look like **http://mysymfonyapp/screenshot/capture?url=http://mywebsite.com&format=jpg&mode=url**
+The url mode is used to retrieve an url matching the second action.
+
+The second one simply retrieve an already generated screenshot.
+The request should look like **http://mysymfonyapp/screenshot/get/800x600_website.com.png**
+
+You might want to do something else. The Screenshot Manager is accessible via a service called idci_web_page_screen_shot.manager. So you can do in your controllers:
 
 ```php
-$screenshot = $this->get('idci_web_page_screen_shot.manager')->createScreenshot($url, $params);
+$renderer = $screenshotManager
+    ->capture($request->query->all())
+    ->resizeImage()
+    ->getRenderer()
+;
 ```
+
+The renderer take care of rendering the screenshot, according to the chosen mode. To retrieve the content of the screenshot, use the render function.
+```php
+$screenshot = $renderer->render();
+;
+```
+Depending on the mode, it can be either a url, or a file, or a base64 encoded string.
 
 The **createScreenshot** function return either the relative path of the image from the web directory, or a base64 encoded string.
 
-**$params** is an array containing parameters to overload values in parameters.yml. In the existing controller, it's build with the parameters of the request.
+**$params** is an array containing parameters. In the existing controller, it's build with the parameters of the request.
 Whatever you do, it should look like something like that:
 
 ```php
 $params = array(
+    "url" => "http://mywebsite.com",
     "mode" => "base64",
     "width" => 1024,
     "file" => "gif"
 );
 ```
 
-
-
-
-
-
-
-
+Only the url is required in this array. Other parameters will overload the values of the parameters.yml file.
