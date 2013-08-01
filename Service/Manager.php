@@ -314,21 +314,25 @@ class Manager
      * 
      * @return imageName
      */
-    public function generateScreenshot($url = null, $output = null)
+    public function generateScreenshot($url = null, $outputPath = null)
     {
         $url = is_null($url) ? $this->getUrl() : $url;
-        $output = is_null($output) ? $this->getOutputPath() : $output;
+        $outputPath = is_null($outputPath) ? $this->getOutputPath() : $outputPath;
 
         // Generating the screenshot using phantomjs
         $command = sprintf("%s %s/../Lib/imageRender.js %s %s",
             $this->getParameter("phantomjs_bin_path"),
             __DIR__,
             $url,
-            $output
+            $outputPath
         );
 
-        // How to check if the command works ?
-        $this->setScreenshotPath(trim(shell_exec($command)));
+        $commandOutput = trim(shell_exec($command));
+        if (!$commandOutput) {
+            throw new \Exception(sprintf("The command %s failed. Maybe the phantomjs_bin_path is wrong", $command));
+        } else {
+            $this->setScreenshotPath($commandOutput);
+        }
 
         return $this->getScreenshotPath();
     }
@@ -357,7 +361,7 @@ class Manager
             $imagePath = $this->getCache()->fetch($this->getImageIdentifier(true));
         // Check if the row image exist if the cache is not enabled
         } else {
-            $imagePath = sprintf("%s%s", $this->getCacheDirectory(), $this->getImageIdentifier());
+            $imagePath = $this->getOutputPath();
             if (!file_exists($imagePath)) {
                 throw new \Exception("Cannot resize %s as it does not exist", $imagePath);
             }
