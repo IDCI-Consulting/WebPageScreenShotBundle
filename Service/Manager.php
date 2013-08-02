@@ -296,7 +296,7 @@ class Manager
             $this->setScreenshotPath($imagePath);
         }
 
-        if(!$imagePath) {
+        if(!isset($imagePath) || !$imagePath) {
             // Generating the screenshot
             $this->generateScreenshot();
             if($this->isCacheEnabled()) {
