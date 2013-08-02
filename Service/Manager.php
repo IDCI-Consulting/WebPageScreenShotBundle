@@ -265,7 +265,6 @@ class Manager
     public function getParameter($parameterPath)
     {
         $parameterPath = is_array($parameterPath) ? $parameterPath : array($parameterPath);
-        $value = null;
 
         $value = self::findParameter($this->getGivenParameters(), $parameterPath);
         if(isset($value)) {
@@ -297,7 +296,7 @@ class Manager
             $this->setScreenshotPath($imagePath);
         }
 
-        if(!isset($imagePath)) {
+        if(!$imagePath) {
             // Generating the screenshot
             $this->generateScreenshot();
             if($this->isCacheEnabled()) {
@@ -368,7 +367,7 @@ class Manager
         }
 
         // Check if the resized screenshot exists
-        if (isset($imagePath) && file_exists($resizedImagePath)) {
+        if ($imagePath && file_exists($resizedImagePath)) {
             $this->setResizedScreenshotPath($resizedImagePath);
 
             return $this;
