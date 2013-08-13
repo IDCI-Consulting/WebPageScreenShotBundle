@@ -319,7 +319,7 @@ class Manager
         $outputPath = is_null($outputPath) ? $this->getOutputPath() : $outputPath;
 
         // Generating the screenshot using phantomjs
-        $command = sprintf("%s %s/../Lib/imageRender.js %s %s",
+        $command = sprintf("%s %s/../Lib/imageRender.js '%s' '%s'",
             $this->getParameter("phantomjs_bin_path"),
             __DIR__,
             $url,
