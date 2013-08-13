@@ -362,7 +362,7 @@ class Manager
         } else {
             $imagePath = $this->getOutputPath();
             if (!file_exists($imagePath)) {
-                throw new \Exception("Cannot resize %s as it does not exist", $imagePath);
+                throw new \Exception(sprintf("Cannot resize %s as it does not exist", $imagePath));
             }
         }
 
