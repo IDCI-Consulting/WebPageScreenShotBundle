@@ -1,7 +1,7 @@
 <?php
 
 /**
- * 
+ *
  * @author:  Baptiste BOUCHEREAU <baptiste.bouchereau@idci-consulting.fr>
  * @license: GPL
  *
@@ -26,10 +26,10 @@ class Manager
 {
     const MAX_WIDTH = 1440;
     const MAX_HEIGHT = 900;
-    public static $AVAILABLE_FORMATS    = array("gif", "png", "jpeg", "jpg");
-    public static $AVAILABLE_MODES      = array("url", "file", "base64");
-    public static $RENDER_PARAMETERS    = array("mode", "format", "width", "height");
-    public static $CACHE_PARAMETERS     = array("enabled", "delay");
+    public static $AVAILABLE_FORMATS = array("gif", "png", "jpeg", "jpg");
+    public static $AVAILABLE_MODES = array("url", "file", "base64");
+    public static $RENDER_PARAMETERS = array("mode", "format", "width", "height");
+    public static $CACHE_PARAMETERS = array("enabled", "delay");
     protected $configurationParameters;
     protected $givenParameters;
     protected $imageHandler;
@@ -47,7 +47,7 @@ class Manager
 
     /**
      * Get the cache
-     * 
+     *
      * @return PhpFileCache
      */
     public function getCache()
@@ -65,7 +65,7 @@ class Manager
 
     /**
      * Get image handler
-     * 
+     *
      * @return ImageHandling
      */
     public function getImageHandler()
@@ -75,7 +75,7 @@ class Manager
 
     /**
      * Set image handler
-     * 
+     *
      * @param ImageHandling $imageHandler
      */
     protected function setImageHandler($imageHandler)
@@ -86,7 +86,7 @@ class Manager
     /**
      * Get configuration Parameters
      *
-     * @return array 
+     * @return array
      */
     public function getConfigurationParameters()
     {
@@ -106,7 +106,7 @@ class Manager
     /**
      * Get given Parameters
      *
-     * @return array 
+     * @return array
      */
     public function getGivenParameters()
     {
@@ -115,7 +115,7 @@ class Manager
 
     /**
      * Get resized screenshot path
-     * 
+     *
      * @return string
      */
     protected function getResizedScreenshotPath()
@@ -125,7 +125,7 @@ class Manager
 
     /**
      * Set resized screenshot path
-     * 
+     *
      * @param string $path
      */
     protected function setResizedScreenshotPath($path)
@@ -135,7 +135,7 @@ class Manager
 
     /**
      * Get screenshot path
-     * 
+     *
      * @return string
      */
     protected function getScreenshotPath()
@@ -145,7 +145,7 @@ class Manager
 
     /**
      * Set screenshot path
-     * 
+     *
      * @param string $path
      */
     protected function setScreenshotPath($path)
@@ -180,7 +180,7 @@ class Manager
 
     /**
      * Get renderer
-     * 
+     *
      * @return RendererInterface;
      */
     public function getRenderer()
@@ -198,7 +198,7 @@ class Manager
 
     /**
      * Renderer
-     * 
+     *
      * @return RendererInterface;
      */
     public function render()
@@ -214,7 +214,7 @@ class Manager
      */
     protected function setGivenParameters($givenParameters)
     {
-        if(!isset($givenParameters['url'])) {
+        if (!isset($givenParameters['url'])) {
             throw new MissingUrlException();
         }
 
@@ -222,11 +222,11 @@ class Manager
         $this->givenParameters['render'] = array();
 
         // To prevent hack
-        foreach($givenParameters as $parameter => $value) {
-            if($parameter != 'url' && !in_array($parameter, self::$RENDER_PARAMETERS)) {
+        foreach ($givenParameters as $parameter => $value) {
+            if ($parameter != 'url' && !in_array($parameter, self::$RENDER_PARAMETERS)) {
                 throw new UnavailableRenderParameterException($parameter);
             }
-         
+
             $check = sprintf('check%s', ucfirst(strtolower($parameter)));
             $this->givenParameters['render'][$parameter] = self::$check($value);
         }
@@ -237,13 +237,13 @@ class Manager
      *
      * @param array $haystack
      * @param array $needle
-     * @return mixed | null 
+     * @return mixed | null
      */
     public static function findParameter($haystack, $needle)
     {
-        if(count($needle) > 1) {
+        if (count($needle) > 1) {
             $key = array_shift($needle);
-            if(!isset($haystack[$key])) {
+            if (!isset($haystack[$key])) {
                 return null;
             }
 
@@ -251,9 +251,8 @@ class Manager
         }
 
         return isset($haystack[$needle[0]]) ?
-            $haystack[$needle[0]] : 
-            null
-        ;
+            $haystack[$needle[0]] :
+            null;
     }
 
     /**
@@ -267,12 +266,12 @@ class Manager
         $parameterPath = is_array($parameterPath) ? $parameterPath : array($parameterPath);
 
         $value = self::findParameter($this->getGivenParameters(), $parameterPath);
-        if(isset($value)) {
+        if (isset($value)) {
             return $value;
         }
 
         $value = self::findParameter($this->getConfigurationParameters(), $parameterPath);
-        if(isset($value)) {
+        if (isset($value)) {
             return $value;
         }
 
@@ -281,7 +280,7 @@ class Manager
 
     /**
      * Get a screenshot
-     * 
+     *
      * @param array $givenParameters Parameters about the screenshot to be generated
      * @return IDCI\Bundle\WebPageScreenShotBundle\Service\Manager
      */
@@ -296,10 +295,10 @@ class Manager
             $this->setScreenshotPath($imagePath);
         }
 
-        if(!isset($imagePath) || !$imagePath) {
+        if (!isset($imagePath) || !$imagePath) {
             // Generating the screenshot
             $this->generateScreenshot();
-            if($this->isCacheEnabled()) {
+            if ($this->isCacheEnabled()) {
                 // Add the captured image in the cache
                 $this->cacheImage($this->getImageIdentifier(true));
             }
@@ -310,7 +309,7 @@ class Manager
 
     /**
      * Generate a screenshot
-     * 
+     *
      * @return imageName
      */
     public function generateScreenshot($url = null, $outputPath = null)
@@ -338,12 +337,12 @@ class Manager
 
     /**
      * Resize an image
-     * 
+     *
      * @param string $imageName the path of the image to be resized
      * @param string $format the ouput format
      * @param string $width the ouput width
      * @param string $height the ouput height
-     * 
+     *
      * @return mixed
      */
     public function resizeImage()
@@ -358,7 +357,7 @@ class Manager
         // Check if the cache is enabled and if the row image is in cache
         if ($this->isCacheEnabled()) {
             $imagePath = $this->getCache()->fetch($this->getImageIdentifier(true));
-        // Check if the row image exist if the cache is not enabled
+            // Check if the row image exist if the cache is not enabled
         } else {
             $imagePath = $this->getOutputPath();
             if (!file_exists($imagePath)) {
@@ -372,23 +371,22 @@ class Manager
 
             return $this;
         }
-            
+
         // Resize the screenshot
         $this
             ->getImageHandler()
             ->open(sprintf("%s%s",
-                $this->getCacheDirectory(),
-                $this->getImageIdentifier())
+                    $this->getCacheDirectory(),
+                    $this->getImageIdentifier())
             )
             ->resize(
                 $this->getParameter(array('render', 'width')),
                 $this->getParameter(array('render', 'height'))
             )
             ->save(sprintf("%s%s",
-                $this->getCacheDirectory(), $resizedImageName),
+                    $this->getCacheDirectory(), $resizedImageName),
                 $this->getParameter(array('render', 'format'))
-            )
-        ;
+            );
         $this->setResizedScreenshotPath($resizedImagePath);
 
         return $this;
@@ -396,7 +394,7 @@ class Manager
 
     /**
      * Get the url
-     * 
+     *
      * @return string url
      */
     public function getUrl()
@@ -406,7 +404,7 @@ class Manager
 
     /**
      * Is cache enabled
-     * 
+     *
      * @return boolean
      */
     public function isCacheEnabled()
@@ -416,7 +414,7 @@ class Manager
 
     /**
      * Get cache ttl
-     * 
+     *
      * @return int
      */
     public function getCacheTTL()
@@ -433,14 +431,9 @@ class Manager
     public function getImageIdentifier($hash = false)
     {
         $urlArray = parse_url($this->getUrl());
-        if(isset($urlArray['path'])) {
-            $imageName = str_replace("/", "_", sprintf("%s%s",
-                $urlArray['host'],
-                $urlArray['path']
-            ));
-        } else {
-            $imageName = $urlArray['host'];
-        }
+        //joining components with underscore and removing all non-digit\alphabetical symbols
+        $imageName = preg_replace('~[^\\pL\d]+~u', "_", implode($urlArray, '_'));
+
 
         $id = sprintf("%s.%s",
             $imageName,
@@ -477,10 +470,10 @@ class Manager
             $this->getCacheTTL()
         );
     }
-    
+
     /**
      * Get the output path
-     * 
+     *
      * @return string : the output full path
      */
     protected function getOutputPath()
@@ -500,12 +493,12 @@ class Manager
 
     /**
      * Check the given url
-     * 
+     *
      * @param string $url
      */
     public static function checkUrl($url)
     {
-        if(!filter_var($url, FILTER_VALIDATE_URL, FILTER_FLAG_SCHEME_REQUIRED | FILTER_FLAG_HOST_REQUIRED)) {
+        if (!filter_var($url, FILTER_VALIDATE_URL, FILTER_FLAG_SCHEME_REQUIRED | FILTER_FLAG_HOST_REQUIRED)) {
             throw new UrlNotValidException($url);
         }
 
@@ -514,7 +507,7 @@ class Manager
 
     /**
      * Check the given format
-     * 
+     *
      * @param string $format
      * @throws UnavailableRenderFormatException
      */
@@ -529,7 +522,7 @@ class Manager
 
     /**
      * Check the given mode
-     * 
+     *
      * @param string $mode
      * @throws UnavailableRenderModeException
      */
@@ -544,7 +537,7 @@ class Manager
 
     /**
      * Check the given width
-     * 
+     *
      * @param int $width
      */
     public static function checkWidth($width)
@@ -556,7 +549,7 @@ class Manager
             )
         );
 
-        if(!filter_var($width, FILTER_VALIDATE_INT, $minMax)) {
+        if (!filter_var($width, FILTER_VALIDATE_INT, $minMax)) {
             throw new WidthNotValidException($width, 0, self::MAX_WIDTH);
         }
 
@@ -565,7 +558,7 @@ class Manager
 
     /**
      * Check the given height
-     * 
+     *
      * @param int $height
      */
     public static function checkHeight($height)
@@ -577,7 +570,7 @@ class Manager
             )
         );
 
-        if(!filter_var($height, FILTER_VALIDATE_INT, $minMax)) {
+        if (!filter_var($height, FILTER_VALIDATE_INT, $minMax)) {
             throw new HeightNotValidException($height, 0, self::MAX_HEIGHT);
         }
 
