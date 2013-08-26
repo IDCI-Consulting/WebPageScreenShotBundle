@@ -77,13 +77,13 @@ You must specify some default values in your `parameters.yml` files. Here is an 
 parameters:
     ...
     screenshot_phantomjs_bin_path: "/usr/bin/phantomjs"
-    screenshot_width: 800
-    screenshot_height: 600
-    screenshot_mode: file
-    screenshot_format: png
-    screenshot_cache_enabled: true
-    screenshot_cache_delay: 86400
-    screenshot_cache_directory:       %kernel.cache_dir%/screenshot/cache/
+    screenshot_width:              800
+    screenshot_height:             600
+    screenshot_mode:               file
+    screenshot_format:             png
+    screenshot_cache_enabled:      true
+    screenshot_cache_delay:        86400
+    screenshot_cache_directory:    %kernel.cache_dir%/screenshot/cache/
 ```
 
 screenshot_phantomjs_bin_path refers to the phantomjs executable path.
@@ -152,7 +152,7 @@ $params = array(
     "url" => "http://mywebsite.com",
     "mode" => "base64",
     "width" => 1024,
-    "file" => "gif"
+    "format" => "gif"
 );
 ```
 
